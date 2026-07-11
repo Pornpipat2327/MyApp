@@ -1,10 +1,9 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Platform, TextInput } from 'react-native';
+import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
+import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
 
 export function TopHeader() {
   const theme = useTheme();
@@ -14,7 +13,7 @@ export function TopHeader() {
       <View style={styles.innerContainer}>
         {/* Brand Logo */}
         <ThemedText type="smallBold" style={styles.logoText}>
-          KEYVAULT
+          ExtremeKeys
         </ThemedText>
 
         {/* Search Bar */}

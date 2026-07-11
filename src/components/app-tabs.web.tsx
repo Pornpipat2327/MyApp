@@ -21,10 +21,16 @@ export default function AppTabs() {
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton iconName="house">Home</TabButton>
+            <TabButton iconName="home">Home</TabButton>
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton iconName="compass">Explore</TabButton>
+          <TabTrigger name="product" href="/product" asChild>
+            <TabButton iconName="shopping_bag">Product</TabButton>
+          </TabTrigger>
+          <TabTrigger name="add" href="/add" asChild>
+            <TabButton iconName="edit_note">Add</TabButton>
+          </TabTrigger>
+          <TabTrigger name="categories" href="/categories" asChild>
+            <TabButton iconName="category">Categories</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -36,9 +42,17 @@ interface CustomTabButtonProps extends TabTriggerSlotProps {
   iconName: string;
 }
 
+const ICON_MAP: Record<string, { ios: string; web: string }> = {
+  home: { ios: 'house.fill', web: 'home' },
+  shopping_bag: { ios: 'bag.fill', web: 'shopping_bag' },
+  edit_note: { ios: 'square.and.pencil', web: 'edit_note' },
+  category: { ios: 'square.grid.2x2.fill', web: 'category' },
+};
+
 export function TabButton({ children, isFocused, iconName, ...props }: CustomTabButtonProps) {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const icon = ICON_MAP[iconName] ?? { ios: iconName, web: iconName };
 
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
@@ -47,7 +61,7 @@ export function TabButton({ children, isFocused, iconName, ...props }: CustomTab
         style={styles.tabButtonView}>
         <SymbolView
           tintColor={isFocused ? colors.text : colors.textSecondary}
-          name={{ ios: iconName === 'house' ? 'house.fill' : 'compass.fill', web: iconName }}
+          name={{ ios: icon.ios, web: icon.web }}
           size={16}
         />
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
