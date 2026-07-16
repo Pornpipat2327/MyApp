@@ -1,19 +1,23 @@
-import React from 'react';
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  Image,
-  Pressable,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
-import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TopHeader } from '@/components/top-header';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const API_URL =
+  'https://raw.githubusercontent.com/Pornpipat2327/MyApp/refs/heads/main/src/app/Keyboard.json';
 
 interface Product {
   id: string;
@@ -22,59 +26,47 @@ interface Product {
   price: string;
   rating: string;
   description: string;
-  image: any;
+  image: string;
 }
 
-const PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Nova RGB Mechanical',
-    category: 'Gaming',
-    price: '$159.00',
-    rating: '★ 4.9',
-    description: 'Premium hot-swappable mechanical keyboard with per-key RGB, Cherry MX switches, and aircraft-grade aluminum frame.',
-    image: require('@/assets/images/keyboard_mechanical_rgb.png'),
-  },
-  {
-    id: '2',
-    name: 'Aero 75 Wireless',
-    category: 'Wireless',
-    price: '$129.00',
-    rating: '★ 4.8',
-    description: 'Ultra-slim 75% wireless keyboard with Bluetooth 5.1, low-profile keys, and up to 200 hours of battery life.',
-    image: require('@/assets/images/keyboard_wireless_white.png'),
-  },
-  {
-    id: '3',
-    name: 'Retro Type Classic',
-    category: 'Vintage',
-    price: '$189.00',
-    rating: '★ 4.7',
-    description: 'Typewriter-inspired mechanical keyboard with round keycaps, clicky blue switches, and retro pastel aesthetics.',
-    image: require('@/assets/images/keyboard_retro_vintage.png'),
-  },
-  {
-    id: '4',
-    name: 'Ergo Split Pro',
-    category: 'Ergonomic',
-    price: '$249.00',
-    rating: '★ 4.8',
-    description: 'Split ergonomic mechanical keyboard with adjustable tenting, cushioned wrist rests, and programmable macro keys.',
-    image: require('@/assets/images/keyboard_ergonomic_split.png'),
-  },
-  {
-    id: '5',
-    name: 'Sakura 60 Compact',
-    category: 'Compact',
-    price: '$99.00',
-    rating: '★ 4.6',
-    description: 'Adorable 60% compact keyboard with pastel pink and white keycaps, Gateron switches, and USB-C connectivity.',
-    image: require('@/assets/images/keyboard_compact_60.png'),
-  },
-];
+// Map image path strings from the API to local require() assets.
+// React Native requires static require calls, so we map them explicitly.
+const IMAGE_MAP: Record<string, any> = {
+  '@/assets/images/keyboard_mechanical_rgb.png': require('@/assets/images/keyboard_mechanical_rgb.png'),
+  '@/assets/images/keyboard_wireless_white.png': require('@/assets/images/keyboard_wireless_white.png'),
+  '@/assets/images/keyboard_retro_vintage.png': require('@/assets/images/keyboard_retro_vintage.png'),
+  '@/assets/images/keyboard_ergonomic_split.png': require('@/assets/images/keyboard_ergonomic_split.png'),
+  '@/assets/images/keyboard_compact_60.png': require('@/assets/images/keyboard_compact_60.png'),
+};
 
 export default function ProductScreen() {
   const theme = useTheme();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: Product[] = await response.json();
+        setProducts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const getImageSource = (imagePath: string) => {
+    return IMAGE_MAP[imagePath] ?? null;
+  };
 
   return (
     <ThemedView type="background" style={styles.container}>
@@ -96,62 +88,108 @@ export default function ProductScreen() {
             </ThemedText>
           </View>
 
-          {/* Section Header */}
-          <View style={styles.sectionHeader}>
-            <ThemedText type="smallBold" style={styles.sectionTitle}>
-              {PRODUCTS.length} Products
-            </ThemedText>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <View style={styles.sortButton}>
-                <SymbolView
-                  tintColor={theme.textSecondary}
-                  name={{ ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }}
-                  size={16}
-                />
-                <ThemedText type="small" themeColor="textSecondary">
-                  Sort
+          {/* Section Header — hidden while loading */}
+          {!loading && !error && (
+            <View style={styles.sectionHeader}>
+              <ThemedText type="smallBold" style={styles.sectionTitle}>
+                {products.length} Products
+              </ThemedText>
+              <Pressable style={({ pressed }) => pressed && styles.pressed}>
+                <View style={styles.sortButton}>
+                  <SymbolView
+                    tintColor={theme.textSecondary}
+                    name={{ ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }}
+                    size={16}
+                  />
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Sort
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <View style={styles.centerState}>
+              <ActivityIndicator size="large" color={theme.text} />
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.two }}>
+                Loading products...
+              </ThemedText>
+            </View>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <View style={styles.centerState}>
+              <ThemedText type="small" style={{ color: '#FF3B30' }}>
+                {error}
+              </ThemedText>
+              <Pressable
+                onPress={() => {
+                  setLoading(true);
+                  setError(null);
+                  fetch(API_URL)
+                    .then((res) => {
+                      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                      return res.json();
+                    })
+                    .then((data) => setProducts(data))
+                    .catch((err: Error) => setError(err.message))
+                    .finally(() => setLoading(false));
+                }}
+                style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+              >
+                <ThemedText type="smallBold" style={styles.buyButtonText}>
+                  Retry
                 </ThemedText>
-              </View>
-            </Pressable>
-          </View>
+              </Pressable>
+            </View>
+          )}
 
           {/* Products Grid */}
-          <View style={styles.productsGrid}>
-            {PRODUCTS.map((product) => (
-              <ThemedView key={product.id} type="backgroundElement" style={styles.card}>
-                <Image source={product.image} style={styles.productImage} resizeMode="cover" />
-                <View style={styles.cardContent}>
-                  <View style={styles.categoryRow}>
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.categoryText}>
-                      {product.category}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.ratingText}>
-                      {product.rating}
-                    </ThemedText>
-                  </View>
-
-                  <ThemedText type="smallBold" style={styles.productName}>
-                    {product.name}
-                  </ThemedText>
-
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
-                    {product.description}
-                  </ThemedText>
-
-                  <View style={styles.priceRow}>
-                    <ThemedText type="default" style={styles.priceText}>
-                      {product.price}
-                    </ThemedText>
-                    <Pressable style={({ pressed }) => [styles.buyButton, pressed && styles.pressed]}>
-                      <ThemedText type="smallBold" style={styles.buyButtonText}>
-                        Add to Cart
+          {!loading && !error && (
+            <View style={styles.productsGrid}>
+              {products.map((product) => (
+                <ThemedView key={product.id} type="backgroundElement" style={styles.card}>
+                  <Image
+                    source={getImageSource(product.image)}
+                    style={styles.productImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.cardContent}>
+                    <View style={styles.categoryRow}>
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.categoryText}>
+                        {product.category}
                       </ThemedText>
-                    </Pressable>
+                      <ThemedText type="small" style={styles.ratingText}>
+                        {product.rating}
+                      </ThemedText>
+                    </View>
+
+                    <ThemedText type="smallBold" style={styles.productName}>
+                      {product.name}
+                    </ThemedText>
+
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
+                      {product.description}
+                    </ThemedText>
+
+                    <View style={styles.priceRow}>
+                      <ThemedText type="default" style={styles.priceText}>
+                        {product.price}
+                      </ThemedText>
+                      <Pressable style={({ pressed }) => [styles.buyButton, pressed && styles.pressed]}>
+                        <ThemedText type="smallBold" style={styles.buyButtonText}>
+                          Add to Cart
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
-              </ThemedView>
-            ))}
-          </View>
+                </ThemedView>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -289,5 +327,19 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  centerState: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.six,
+    gap: Spacing.three,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Spacing.three,
+    marginTop: Spacing.two,
   },
 });
