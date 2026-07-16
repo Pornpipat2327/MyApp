@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "name": "Nova RGB Mechanical",
+    "category": "Gaming",
+    "price": "$159.00",
+    "rating": "★ 4.9",
+    "description": "Premium hot-swappable mechanical keyboard with per-key RGB, Cherry MX switches, and aircraft-grade aluminum frame.",
+    "image": "@/assets/images/keyboard_mechanical_rgb.png"
+  },
+  {
+    "id": "2",
+    "name": "Aero 75 Wireless",
+    "category": "Wireless",
+    "price": "$129.00",
+    "rating": "★ 4.8",
+    "description": "Ultra-slim 75% wireless keyboard with Bluetooth 5.1, low-profile keys, and up to 200 hours of battery life.",
+    "image": "@/assets/images/keyboard_wireless_white.png"
+  },
+  {
+    "id": "3",
+    "name": "Retro Type Classic",
+    "category": "Vintage",
+    "price": "$189.00",
+    "rating": "★ 4.7",
+    "description": "Typewriter-inspired mechanical keyboard with round keycaps, clicky blue switches, and retro pastel aesthetics.",
+    "image": "@/assets/images/keyboard_retro_vintage.png"
+  },
+  {
+    "id": "4",
+    "name": "Ergo Split Pro",
+    "category": "Ergonomic",
+    "price": "$249.00",
+    "rating": "★ 4.8",
+    "description": "Split ergonomic mechanical keyboard with adjustable tenting, cushioned wrist rests, and programmable macro keys.",
+    "image": "@/assets/images/keyboard_ergonomic_split.png"
+  },
+  {
+    "id": "5",
+    "name": "Sakura 60 Compact",
+    "category": "Compact",
+    "price": "$99.00",
+    "rating": "★ 4.6",
+    "description": "Adorable 60% compact keyboard with pastel pink and white keycaps, Gateron switches, and USB-C connectivity.",
+    "image": "@/assets/images/keyboard_compact_60.png"
+  }
+]
