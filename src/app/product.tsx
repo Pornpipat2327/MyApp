@@ -16,17 +16,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const API_URL =
-  'https://raw.githubusercontent.com/Pornpipat2327/MyApp/refs/heads/main/src/app/Keyboard.json';
+const API_URL = 'http://119.59.102.161:3032/api/items';
 
 interface Product {
-  id: string;
+  id: string | number;
   name: string;
-  category: string;
-  price: string;
-  rating: string;
-  description: string;
-  image: string;
+  category?: string;
+  price: string | number;
+  rating?: string;
+  description?: string;
+  image?: string;
 }
 
 // Map image path strings from the API to local require() assets.
@@ -52,8 +51,9 @@ export default function ProductScreen() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data: Product[] = await response.json();
-        setProducts(data);
+        const json = await response.json();
+        const items: Product[] = Array.isArray(json) ? json : (json.data || []);
+        setProducts(items);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load products');
       } finally {
