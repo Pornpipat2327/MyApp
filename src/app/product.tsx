@@ -4,7 +4,7 @@ import { TopHeader } from '@/components/top-header';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -23,7 +23,7 @@ interface Product {
   name: string;
   category?: string;
   price: string | number;
-  rating?: string;
+  rating?: string | number;
   description?: string;
   image?: string;
 }
@@ -38,34 +38,92 @@ const IMAGE_MAP: Record<string, any> = {
   '@/assets/images/keyboard_compact_60.png': require('@/assets/images/keyboard_compact_60.png'),
 };
 
+const DEFAULT_IMAGE = require('@/assets/images/keyboard_mechanical_rgb.png');
+
+type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
+
 export default function ProductScreen() {
   const theme = useTheme();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>('default');
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const json = await response.json();
+      const items: Product[] = Array.isArray(json) ? json : (json.data || []);
+      setProducts(items);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const json = await response.json();
-        const items: Product[] = Array.isArray(json) ? json : (json.data || []);
-        setProducts(items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load products');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, []);
 
-  const getImageSource = (imagePath: string) => {
-    return IMAGE_MAP[imagePath] ?? null;
+  const getImageSource = (imagePath?: string) => {
+    if (!imagePath) return DEFAULT_IMAGE;
+    if (IMAGE_MAP[imagePath]) {
+      return IMAGE_MAP[imagePath];
+    }
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
+      return { uri: imagePath };
+    }
+    return DEFAULT_IMAGE;
+  };
+
+  const handleToggleSort = () => {
+    setSortOption((prev) => {
+      if (prev === 'default') return 'price-asc';
+      if (prev === 'price-asc') return 'price-desc';
+      if (prev === 'price-desc') return 'name';
+      return 'default';
+    });
+  };
+
+  const sortedProducts = useMemo(() => {
+    const list = [...products];
+    if (sortOption === 'price-asc') {
+      return list.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    }
+    if (sortOption === 'price-desc') {
+      return list.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    }
+    if (sortOption === 'name') {
+      return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+    return list;
+  }, [products, sortOption]);
+
+  const getSortLabel = () => {
+    switch (sortOption) {
+      case 'price-asc':
+        return 'Price: Low to High';
+      case 'price-desc':
+        return 'Price: High to Low';
+      case 'name':
+        return 'Name';
+      default:
+        return 'Sort';
+    }
+  };
+
+  const formatPrice = (price: string | number) => {
+    if (typeof price === 'number') {
+      return `$${price.toFixed(2)}`;
+    }
+    if (!price) return '$0.00';
+    return String(price).startsWith('$') ? String(price) : `$${price}`;
   };
 
   return (
@@ -92,9 +150,9 @@ export default function ProductScreen() {
           {!loading && !error && (
             <View style={styles.sectionHeader}>
               <ThemedText type="smallBold" style={styles.sectionTitle}>
-                {products.length} Products
+                {sortedProducts.length} Products
               </ThemedText>
-              <Pressable style={({ pressed }) => pressed && styles.pressed}>
+              <Pressable onPress={handleToggleSort} style={({ pressed }) => pressed && styles.pressed}>
                 <View style={styles.sortButton}>
                   <SymbolView
                     tintColor={theme.textSecondary}
@@ -102,7 +160,7 @@ export default function ProductScreen() {
                     size={16}
                   />
                   <ThemedText type="small" themeColor="textSecondary">
-                    Sort
+                    {getSortLabel()}
                   </ThemedText>
                 </View>
               </Pressable>
@@ -126,18 +184,7 @@ export default function ProductScreen() {
                 {error}
               </ThemedText>
               <Pressable
-                onPress={() => {
-                  setLoading(true);
-                  setError(null);
-                  fetch(API_URL)
-                    .then((res) => {
-                      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                      return res.json();
-                    })
-                    .then((data) => setProducts(data))
-                    .catch((err: Error) => setError(err.message))
-                    .finally(() => setLoading(false));
-                }}
+                onPress={fetchProducts}
                 style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
               >
                 <ThemedText type="smallBold" style={styles.buyButtonText}>
@@ -147,11 +194,20 @@ export default function ProductScreen() {
             </View>
           )}
 
+          {/* Empty State */}
+          {!loading && !error && sortedProducts.length === 0 && (
+            <View style={styles.centerState}>
+              <ThemedText type="small" themeColor="textSecondary">
+                No products found.
+              </ThemedText>
+            </View>
+          )}
+
           {/* Products Grid */}
-          {!loading && !error && (
+          {!loading && !error && sortedProducts.length > 0 && (
             <View style={styles.productsGrid}>
-              {products.map((product) => (
-                <ThemedView key={product.id} type="backgroundElement" style={styles.card}>
+              {sortedProducts.map((product, index) => (
+                <ThemedView key={product.id ?? index} type="backgroundElement" style={styles.card}>
                   <Image
                     source={getImageSource(product.image)}
                     style={styles.productImage}
@@ -160,10 +216,10 @@ export default function ProductScreen() {
                   <View style={styles.cardContent}>
                     <View style={styles.categoryRow}>
                       <ThemedText type="small" themeColor="textSecondary" style={styles.categoryText}>
-                        {product.category}
+                        {product.category || 'General'}
                       </ThemedText>
                       <ThemedText type="small" style={styles.ratingText}>
-                        {product.rating}
+                        ★ {product.rating ?? '4.5'}
                       </ThemedText>
                     </View>
 
@@ -172,12 +228,12 @@ export default function ProductScreen() {
                     </ThemedText>
 
                     <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
-                      {product.description}
+                      {product.description || 'No description available.'}
                     </ThemedText>
 
                     <View style={styles.priceRow}>
                       <ThemedText type="default" style={styles.priceText}>
-                        {product.price}
+                        {formatPrice(product.price)}
                       </ThemedText>
                       <Pressable style={({ pressed }) => [styles.buyButton, pressed && styles.pressed]}>
                         <ThemedText type="smallBold" style={styles.buyButtonText}>
@@ -221,7 +277,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     ...Platform.select({
       web: {
-        width: `calc(100% - ${Spacing.four * 2}px)`,
+        width: `calc(100% - ${Spacing.four * 2}px)` as any,
       },
     }),
   },
@@ -256,7 +312,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
   },
@@ -267,7 +323,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
     ...Platform.select({
       web: {
-        width: `calc(33.33% - ${(Spacing.three * 2) / 3}px)`,
+        width: `calc(33.33% - ${(Spacing.three * 2) / 3}px)` as any,
         minWidth: 220,
       },
     }),
@@ -343,3 +399,4 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
 });
+

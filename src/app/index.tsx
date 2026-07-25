@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, ScrollView, View, Image, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
+import { useRouter } from 'expo-router';
 import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,10 +12,10 @@ import { useTheme } from '@/hooks/use-theme';
 // ─── DATA ───────────────────────────────────────────────────────────
 
 const STATS = [
-  { id: 's1', label: 'Total Products', value: '128', change: '+12', icon: { ios: 'shippingbox.fill', android: 'inventory_2', web: 'inventory_2' }, color: '#007AFF' },
-  { id: 's2', label: 'Total Orders', value: '1,847', change: '+86', icon: { ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' }, color: '#30D158' },
-  { id: 's3', label: 'Revenue', value: '$48.2K', change: '+15%', icon: { ios: 'dollarsign.circle.fill', android: 'payments', web: 'payments' }, color: '#FF9F0A' },
-  { id: 's4', label: 'Customers', value: '3,204', change: '+124', icon: { ios: 'person.2.fill', android: 'group', web: 'group' }, color: '#BF5AF2' },
+  { id: 's1', label: 'Total Products', value: '128', change: '+12', icon: { ios: 'shippingbox.fill', android: 'inventory_2', web: 'inventory_2' } as const, color: '#007AFF' },
+  { id: 's2', label: 'Total Orders', value: '1,847', change: '+86', icon: { ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' } as const, color: '#30D158' },
+  { id: 's3', label: 'Revenue', value: '$48.2K', change: '+15%', icon: { ios: 'dollarsign.circle.fill', android: 'payments', web: 'payments' } as const, color: '#FF9F0A' },
+  { id: 's4', label: 'Customers', value: '3,204', change: '+124', icon: { ios: 'person.2.fill', android: 'group', web: 'group' } as const, color: '#BF5AF2' },
 ];
 
 const RECENT_ORDERS = [
@@ -33,10 +34,10 @@ const TOP_PRODUCTS = [
 ];
 
 const QUICK_ACTIONS = [
-  { id: 'qa1', label: 'Add Product', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' }, color: '#007AFF' },
-  { id: 'qa2', label: 'View Orders', icon: { ios: 'list.bullet.rectangle.fill', android: 'receipt_long', web: 'receipt_long' }, color: '#30D158' },
-  { id: 'qa3', label: 'Manage GB', icon: { ios: 'clock.fill', android: 'schedule', web: 'schedule' }, color: '#FF9F0A' },
-  { id: 'qa4', label: 'Analytics', icon: { ios: 'chart.bar.fill', android: 'bar_chart', web: 'bar_chart' }, color: '#FF453A' },
+  { id: 'qa1', label: 'Add Product', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as const, color: '#007AFF', route: '/add' as const },
+  { id: 'qa2', label: 'View Orders', icon: { ios: 'list.bullet.rectangle.fill', android: 'receipt_long', web: 'receipt_long' } as const, color: '#30D158', route: '/product' as const },
+  { id: 'qa3', label: 'Manage GB', icon: { ios: 'clock.fill', android: 'schedule', web: 'schedule' } as const, color: '#FF9F0A', route: '/product' as const },
+  { id: 'qa4', label: 'Categories', icon: { ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' } as const, color: '#FF453A', route: '/categories' as const },
 ];
 
 const WEEKLY_SALES = [
@@ -64,12 +65,12 @@ const STATUS_COLORS = {
 
 // ─── SUB-COMPONENTS ─────────────────────────────────────────────────
 
-function SectionHeader({ title, actionText }: { title: string; actionText?: string }) {
+function SectionHeader({ title, actionText, onPress }: { title: string; actionText?: string; onPress?: () => void }) {
   return (
     <View style={styles.sectionHeader}>
       <ThemedText type="smallBold" style={styles.sectionTitle}>{title}</ThemedText>
       {actionText && (
-        <Pressable style={({ pressed }) => pressed && styles.pressed}>
+        <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
           <ThemedText type="small" style={styles.sectionLink}>{actionText}</ThemedText>
         </Pressable>
       )}
@@ -89,6 +90,7 @@ function ProgressBar({ progress, color }: { progress: number; color: string }) {
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const router = useRouter();
 
   return (
     <ThemedView type="background" style={styles.root}>
@@ -143,7 +145,11 @@ export default function HomeScreen() {
           <SectionHeader title="Quick Actions" />
           <View style={[styles.content, styles.actionsRow]}>
             {QUICK_ACTIONS.map((a) => (
-              <Pressable key={a.id} style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]}>
+              <Pressable
+                key={a.id}
+                onPress={() => router.push(a.route as any)}
+                style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]}
+              >
                 <ThemedView type="backgroundElement" style={styles.actionInner}>
                   <View style={[styles.actionIcon, { backgroundColor: a.color + '18' }]}>
                     <SymbolView tintColor={a.color} name={a.icon} size={20} />
@@ -155,7 +161,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Weekly Sales ── */}
-          <SectionHeader title="Weekly Sales" actionText="Details" />
+          <SectionHeader title="Weekly Sales" actionText="Details" onPress={() => router.push('/product')} />
           <View style={styles.content}>
             <ThemedView type="backgroundElement" style={styles.card}>
               <View style={styles.chartHeader}>
@@ -185,7 +191,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Group Buy Status ── */}
-          <SectionHeader title="Group Buy Status" actionText="View All" />
+          <SectionHeader title="Group Buy Status" actionText="View All" onPress={() => router.push('/product')} />
           <View style={[styles.content, styles.gbList]}>
             {GB_STATUS.map((gb) => {
               const barColor = gb.progress >= 0.8 ? '#30D158' : '#007AFF';
@@ -223,7 +229,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Top Products ── */}
-          <SectionHeader title="Top Products" actionText="See All" />
+          <SectionHeader title="Top Products" actionText="See All" onPress={() => router.push('/product')} />
           <View style={styles.content}>
             <ThemedView type="backgroundElement" style={styles.card}>
               {TOP_PRODUCTS.map((p, i) => (
@@ -244,7 +250,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Recent Orders ── */}
-          <SectionHeader title="Recent Orders" actionText="View All" />
+          <SectionHeader title="Recent Orders" actionText="View All" onPress={() => router.push('/product')} />
           <View style={styles.content}>
             <ThemedView type="backgroundElement" style={styles.card}>
               {RECENT_ORDERS.map((o, i) => {
@@ -501,3 +507,4 @@ const styles = StyleSheet.create({
   // ── Divider ──
   divider: { height: 1, marginVertical: 2 },
 });
+

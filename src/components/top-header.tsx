@@ -1,26 +1,30 @@
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
+import { useRouter } from 'expo-router';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 export function TopHeader() {
   const theme = useTheme();
+  const router = useRouter();
 
   return (
     <ThemedView type="background" style={styles.headerContainer}>
       <View style={styles.innerContainer}>
         {/* Brand Logo */}
-        <ThemedText type="smallBold" style={styles.logoText}>
-          ExtremeKeys
-        </ThemedText>
+        <Pressable onPress={() => router.push('/')} style={({ pressed }) => pressed && styles.pressed}>
+          <ThemedText type="smallBold" style={styles.logoText}>
+            ExtremeKeys
+          </ThemedText>
+        </Pressable>
 
         {/* Search Bar */}
         <View style={[styles.searchBar, { backgroundColor: theme.backgroundElement }]}>
           <SymbolView
             tintColor={theme.textSecondary}
-            name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+            name={{ ios: 'magnifyingglass', android: 'search', web: 'search' } as any}
             size={16}
           />
           <TextInput
@@ -32,10 +36,13 @@ export function TopHeader() {
 
         {/* Icons Area */}
         <View style={styles.iconsContainer}>
-          <Pressable style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <Pressable
+            onPress={() => router.push('/product')}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          >
             <SymbolView
               tintColor={theme.text}
-              name={{ ios: 'bag', android: 'shopping-cart', web: 'shopping_cart' }}
+              name={{ ios: 'bag', android: 'shopping_cart', web: 'shopping_cart' } as any}
               size={20}
             />
             {/* Cart Item Count Badge */}
@@ -47,7 +54,7 @@ export function TopHeader() {
           <Pressable style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
             <SymbolView
               tintColor={theme.text}
-              name={{ ios: 'person.crop.circle', android: 'person', web: 'person' }}
+              name={{ ios: 'person.crop.circle', android: 'person', web: 'person' } as any}
               size={20}
             />
           </Pressable>
@@ -102,7 +109,7 @@ const styles = StyleSheet.create({
     padding: 0,
     ...Platform.select({
       web: {
-        outlineStyle: 'none',
+        outlineStyle: 'none' as any,
       },
     }),
   },
