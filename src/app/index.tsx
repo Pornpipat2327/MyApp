@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, View, Image, Pressable, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
@@ -91,6 +91,20 @@ function ProgressBar({ progress, color }: { progress: number; color: string }) {
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const savedUser = localStorage.getItem('user');
+      if (!savedUser) {
+        router.replace('/login' as any);
+      } else {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {}
+      }
+    }
+  }, []);
 
   return (
     <ThemedView type="background" style={styles.root}>
@@ -106,7 +120,9 @@ export default function HomeScreen() {
           <View style={styles.content}>
             <View style={styles.welcomeRow}>
               <View style={styles.welcomeText}>
-                <ThemedText type="small" themeColor="textSecondary">สวัสดี, Admin 👋</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  สวัสดี, {user?.username || 'User'} 👋
+                </ThemedText>
                 <ThemedText type="subtitle" style={styles.welcomeTitle}>
                   ยินดีต้อนรับสู่{'\n'}ExtremeKey
                 </ThemedText>

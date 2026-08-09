@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -7,6 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
@@ -69,7 +70,25 @@ const CATEGORIES: Category[] = [
 
 export default function CategoriesScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const user = localStorage.getItem('user');
+      if (!user) {
+        router.replace('/login' as any);
+      }
+    }
+  }, []);
+
+  const handleSelectCategory = (cat: Category) => {
+    setSelectedId(cat.id);
+    router.push({
+      pathname: '/product' as any,
+      params: { category: cat.name },
+    });
+  };
 
   return (
     <ThemedView type="background" style={styles.container}>
@@ -98,7 +117,7 @@ export default function CategoriesScreen() {
               return (
                 <Pressable
                   key={cat.id}
-                  onPress={() => setSelectedId(isSelected ? null : cat.id)}
+                  onPress={() => handleSelectCategory(cat)}
                   style={({ pressed }) => [pressed && styles.pressed]}
                 >
                   <ThemedView

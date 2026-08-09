@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -6,8 +6,11 @@ import {
   Pressable,
   TextInput,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
@@ -17,22 +20,133 @@ import { useTheme } from '@/hooks/use-theme';
 
 const CATEGORIES = ['Gaming', 'Wireless', 'Vintage', 'Ergonomic', 'Compact', 'Mechanical'];
 
-export default function AddScreen() {
-  const theme = useTheme();
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+// API Endpoint (Adjust host/port if needed, e.g., http://10.0.2.2:3032 or localhost:3032)
+const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3032/api/products' : 'http://localhost:3032/api/products';
 
-  const handleSubmit = () => {
-    // TODO: implement product submission
-    alert(`Product "${name}" added!`);
-    setName('');
-    setPrice('');
-    setCategory('');
-    setDescription('');
-    setSelectedCategory(null);
+export interface EditableProduct {
+  id?: string;
+  name: string;
+  category?: string;
+  stock?: number;
+  location_text?: string;
+  badge_status?: string;
+  image_url?: string;
+  price?: number;
+  description?: string;
+}
+
+export interface AddProductScreenProps {
+  existingCategories?: string[];
+  product?: EditableProduct | null;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export default function AddScreen({ product = null, onSuccess, onCancel }: AddProductScreenProps = {}) {
+  const theme = useTheme();
+  const router = useRouter();
+  const isEditMode = !!product;
+
+  const [name, setName] = useState(product?.name ?? '');
+  const [price, setPrice] = useState(product?.price !== undefined ? String(product.price) : '');
+  const [stock, setStock] = useState(product?.stock !== undefined ? String(product.stock) : '10');
+  const [location, setLocation] = useState(product?.location_text ?? '');
+  const [imageUrl, setImageUrl] = useState(product?.image_url ?? '');
+  const [description, setDescription] = useState(product?.description ?? '');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(product?.category ?? null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const user = localStorage.getItem('user');
+      if (!user) {
+        router.replace('/login' as any);
+      }
+    }
+  }, []);
+
+  const handleSubmit = async () => {
+    // Validation: 400 Bad Request -> Missing name
+    if (!name.trim()) {
+      if (Platform.OS === 'web') {
+        alert('400 Bad Request: Missing product name');
+      } else {
+        Alert.alert('Error 400 Bad Request', 'Product name is required');
+      }
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Build product object from form state according to Slide 5, 7 & 8
+      const payload = {
+        name: name.trim(),
+        price: parseFloat(price) || 0,
+        stock: parseInt(stock, 10) || 0,
+        category: selectedCategory || '',
+        location_text: location.trim() || 'Store Front',
+        badge_status: product?.badge_status || 'Active',
+        image_url: imageUrl.trim() || null,
+        description: description.trim(),
+      };
+
+      const url = isEditMode && product?.id ? `${API_URL}/${product.id}` : API_URL;
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && (data.success || response.status === 201 || response.status === 200)) {
+        const msg = isEditMode
+          ? `Product updated successfully!`
+          : `Product created successfully! (ID: ${data.productId || 'N/A'})`;
+
+        if (Platform.OS === 'web') {
+          alert(msg);
+        } else {
+          Alert.alert('Success', msg);
+        }
+
+        if (!isEditMode) {
+          // Reset form on Add
+          setName('');
+          setPrice('');
+          setStock('10');
+          setLocation('');
+          setImageUrl('');
+          setDescription('');
+          setSelectedCategory(null);
+        }
+
+        if (onSuccess) onSuccess();
+      } else {
+        // 400 Bad Request or 500 Server Error
+        const errorMsg = data.error || data.message || (isEditMode ? 'Failed to update product' : 'Failed to add product');
+        if (Platform.OS === 'web') {
+          alert(`Error (${response.status}): ${errorMsg}`);
+        } else {
+          Alert.alert(`Error (${response.status})`, errorMsg);
+        }
+      }
+    } catch (error: any) {
+      console.error('Fetch error:', error);
+      const networkErrMsg = 'Cannot connect to server. Please check DB connection or API URL.';
+      if (Platform.OS === 'web') {
+        alert(`500 Server Error: ${networkErrMsg}`);
+      } else {
+        Alert.alert('500 Server Error', networkErrMsg);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -47,18 +161,24 @@ export default function AddScreen() {
         >
           {/* Page Header */}
           <View style={styles.pageHeader}>
-            <View style={[styles.headerIconCircle, { backgroundColor: '#007AFF' }]}>
+            <View style={[styles.headerIconCircle, { backgroundColor: isEditMode ? '#FF9500' : '#007AFF' }]}>
               <SymbolView
                 tintColor="#ffffff"
-                name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' }}
+                name={{
+                  ios: isEditMode ? 'pencil.circle.fill' : 'plus.circle.fill',
+                  android: isEditMode ? 'edit' : 'add_circle',
+                  web: isEditMode ? 'edit' : 'add_circle',
+                }}
                 size={28}
               />
             </View>
             <ThemedText type="subtitle" style={styles.pageTitle}>
-              Add Product
+              {isEditMode ? 'Edit Product' : 'Add Product'}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.pageSubtitle}>
-              Fill in the details below to add a new product to your catalog.
+              {isEditMode
+                ? 'Update details for this product in your catalog.'
+                : 'Fill in the details below to add a new product to your catalog.'}
             </ThemedText>
           </View>
 
@@ -66,7 +186,7 @@ export default function AddScreen() {
           <ThemedView type="backgroundElement" style={styles.formCard}>
             {/* Product Name */}
             <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Product Name</ThemedText>
+              <ThemedText type="smallBold" style={styles.label}>Product Name *</ThemedText>
               <TextInput
                 value={name}
                 onChangeText={setName}
@@ -76,15 +196,54 @@ export default function AddScreen() {
               />
             </View>
 
-            {/* Price */}
+            {/* Price & Stock Row */}
+            <View style={{ flexDirection: 'row', gap: Spacing.three }}>
+              <View style={[styles.fieldGroup, { flex: 1 }]}>
+                <ThemedText type="smallBold" style={styles.label}>Price (THB)</ThemedText>
+                <TextInput
+                  value={price}
+                  onChangeText={setPrice}
+                  placeholder="e.g. 1590.00"
+                  placeholderTextColor={theme.textSecondary}
+                  keyboardType="decimal-pad"
+                  style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                />
+              </View>
+
+              <View style={[styles.fieldGroup, { flex: 1 }]}>
+                <ThemedText type="smallBold" style={styles.label}>Stock Quantity</ThemedText>
+                <TextInput
+                  value={stock}
+                  onChangeText={setStock}
+                  placeholder="e.g. 10"
+                  placeholderTextColor={theme.textSecondary}
+                  keyboardType="number-pad"
+                  style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                />
+              </View>
+            </View>
+
+            {/* Location Text */}
             <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Price (USD)</ThemedText>
+              <ThemedText type="smallBold" style={styles.label}>Location / Store</ThemedText>
               <TextInput
-                value={price}
-                onChangeText={setPrice}
-                placeholder="e.g. 159.00"
+                value={location}
+                onChangeText={setLocation}
+                placeholder="e.g. Warehouse A / Store Front"
                 placeholderTextColor={theme.textSecondary}
-                keyboardType="decimal-pad"
+                style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+              />
+            </View>
+
+            {/* Image URL */}
+            <View style={styles.fieldGroup}>
+              <ThemedText type="smallBold" style={styles.label}>Image URL</ThemedText>
+              <TextInput
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="https://example.com/image.jpg"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="url"
                 style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
               />
             </View>
@@ -141,16 +300,27 @@ export default function AddScreen() {
             {/* Submit Button */}
             <Pressable
               onPress={handleSubmit}
-              style={({ pressed }) => [styles.submitButton, pressed && styles.submitPressed]}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.submitButton,
+                pressed && styles.submitPressed,
+                loading && { opacity: 0.6 },
+              ]}
             >
-              <SymbolView
-                tintColor="#ffffff"
-                name={{ ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' }}
-                size={18}
-              />
-              <ThemedText type="smallBold" style={styles.submitText}>
-                Add Product
-              </ThemedText>
+              {loading ? (
+                <ActivityIndicator color="#ffffff" size="small" />
+              ) : (
+                <>
+                  <SymbolView
+                    tintColor="#ffffff"
+                    name={{ ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' }}
+                    size={18}
+                  />
+                  <ThemedText type="smallBold" style={styles.submitText}>
+                    Add Product
+                  </ThemedText>
+                </>
+              )}
             </Pressable>
           </ThemedView>
         </ScrollView>

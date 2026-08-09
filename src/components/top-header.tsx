@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
@@ -6,9 +7,22 @@ import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
-export function TopHeader() {
+interface TopHeaderProps {
+  searchQuery?: string;
+  onSearchChange?: (text: string) => void;
+}
+
+export function TopHeader({ searchQuery = '', onSearchChange }: TopHeaderProps) {
   const theme = useTheme();
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const user = localStorage.getItem('user');
+      setIsLoggedIn(!!user);
+    }
+  }, []);
 
   return (
     <ThemedView type="background" style={styles.headerContainer}>
@@ -30,6 +44,8 @@ export function TopHeader() {
           <TextInput
             placeholder="Search products..."
             placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={onSearchChange}
             style={[styles.searchInput, { color: theme.text }]}
           />
         </View>
@@ -51,12 +67,16 @@ export function TopHeader() {
             </View>
           </Pressable>
 
-          <Pressable style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <Pressable
+            onPress={() => router.push('/login' as any)}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          >
             <SymbolView
-              tintColor={theme.text}
+              tintColor={isLoggedIn ? '#34C759' : theme.text}
               name={{ ios: 'person.crop.circle', android: 'person', web: 'person' } as any}
               size={20}
             />
+            {isLoggedIn && <View style={styles.onlineDot} />}
           </Pressable>
         </View>
       </View>
@@ -140,5 +160,14 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 9,
     fontWeight: '700',
+  },
+  onlineDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34C759',
   },
 });

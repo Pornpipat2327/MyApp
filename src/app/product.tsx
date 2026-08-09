@@ -7,6 +7,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Platform,
   Pressable,
@@ -16,7 +17,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const API_URL = 'http://119.59.102.161:3032/api/items';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+
+const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3032/api/products' : 'http://localhost:3032/api/products';
 
 interface Product {
   id: string | number;
@@ -44,10 +47,26 @@ type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
 export default function ProductScreen() {
   const theme = useTheme();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('default');
+  const [searchQuery, setSearchQuery] = useState(params.category || '');
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const user = localStorage.getItem('user');
+      if (!user) {
+        router.replace('/login' as any);
+        return;
+      }
+    }
+    if (params.category) {
+      setSearchQuery(params.category);
+    }
+  }, [params.category]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -71,6 +90,53 @@ export default function ProductScreen() {
     fetchProducts();
   }, []);
 
+  const confirmAndDelete = async (productId: string | number, productName: string) => {
+    try {
+      const response = await fetch(`${API_URL}/${productId}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        if (Platform.OS === 'web') {
+          window.alert(`Successfully deleted "${productName}"`);
+        } else {
+          Alert.alert('Deleted', `Successfully deleted "${productName}"`);
+        }
+        fetchProducts();
+      } else {
+        const msg = data.message || 'Failed to delete product';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Error', msg);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Network error while deleting';
+      if (Platform.OS === 'web') window.alert(errMsg);
+      else Alert.alert('Error', errMsg);
+    }
+  };
+
+  const handleDeleteProduct = (productId: string | number, productName: string) => {
+    if (Platform.OS === 'web') {
+      const confirmDelete = window.confirm(`Are you sure you want to delete "${productName}"?`);
+      if (confirmDelete) {
+        confirmAndDelete(productId, productName);
+      }
+    } else {
+      Alert.alert(
+        'Confirm Delete',
+        `Are you sure you want to delete "${productName}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => confirmAndDelete(productId, productName),
+          },
+        ]
+      );
+    }
+  };
+
   const getImageSource = (imagePath?: string) => {
     if (!imagePath) return DEFAULT_IMAGE;
     if (IMAGE_MAP[imagePath]) {
@@ -92,7 +158,17 @@ export default function ProductScreen() {
   };
 
   const sortedProducts = useMemo(() => {
-    const list = [...products];
+    let list = [...products];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (p) =>
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q))
+      );
+    }
+
     if (sortOption === 'price-asc') {
       return list.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
     }
@@ -103,7 +179,7 @@ export default function ProductScreen() {
       return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
     return list;
-  }, [products, sortOption]);
+  }, [products, searchQuery, sortOption]);
 
   const getSortLabel = () => {
     switch (sortOption) {
@@ -129,7 +205,7 @@ export default function ProductScreen() {
   return (
     <ThemedView type="background" style={styles.container}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <TopHeader />
+        <TopHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
         <ScrollView
           style={styles.scrollView}
@@ -235,11 +311,44 @@ export default function ProductScreen() {
                       <ThemedText type="default" style={styles.priceText}>
                         {formatPrice(product.price)}
                       </ThemedText>
-                      <Pressable style={({ pressed }) => [styles.buyButton, pressed && styles.pressed]}>
-                        <ThemedText type="smallBold" style={styles.buyButtonText}>
-                          Add to Cart
-                        </ThemedText>
-                      </Pressable>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <Pressable
+                          onPress={() =>
+                            router.push({
+                              pathname: '/edit' as any,
+                              params: {
+                                id: String(product.id),
+                                name: product.name,
+                                price: String(product.price || 0),
+                                category: product.category || '',
+                                description: product.description || '',
+                                image: product.image || '',
+                              },
+                            })
+                          }
+                          style={({ pressed }) => [
+                            styles.buyButton,
+                            { backgroundColor: '#FF9500' },
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <ThemedText type="smallBold" style={styles.buyButtonText}>
+                            Edit
+                          </ThemedText>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeleteProduct(product.id, product.name)}
+                          style={({ pressed }) => [
+                            styles.buyButton,
+                            { backgroundColor: '#FF3B30' },
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <ThemedText type="smallBold" style={styles.buyButtonText}>
+                            Delete
+                          </ThemedText>
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
                 </ThemedView>
