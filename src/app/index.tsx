@@ -94,14 +94,17 @@ export default function HomeScreen() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const savedUser = localStorage.getItem('user');
-      if (!savedUser) {
+    let savedUser = null;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      savedUser = localStorage.getItem('user');
+    }
+    if (!savedUser) {
+      router.replace('/login' as any);
+    } else {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
         router.replace('/login' as any);
-      } else {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch (e) {}
       }
     }
   }, []);

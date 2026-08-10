@@ -20,8 +20,16 @@ import { useTheme } from '@/hooks/use-theme';
 
 const CATEGORIES = ['Gaming', 'Wireless', 'Vintage', 'Ergonomic', 'Compact', 'Mechanical'];
 
-// API Endpoint (Adjust host/port if needed, e.g., http://10.0.2.2:3032 or localhost:3032)
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3032/api/products' : 'http://localhost:3032/api/products';
+const getApiUrl = () => {
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3032/api/products';
+  }
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const host = window.location.hostname || 'localhost';
+    return `http://${host}:3032/api/products`;
+  }
+  return 'http://localhost:3032/api/products';
+};
 
 export interface EditableProduct {
   id?: string;
@@ -65,6 +73,18 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
     }
   }, []);
 
+  useEffect(() => {
+    if (product) {
+      setName(product.name ?? '');
+      setPrice(product.price !== undefined ? String(product.price) : '');
+      setStock(product.stock !== undefined ? String(product.stock) : '10');
+      setLocation(product.location_text ?? '');
+      setImageUrl(product.image_url ?? '');
+      setDescription(product.description ?? '');
+      setSelectedCategory(product.category ?? null);
+    }
+  }, [product]);
+
   const handleSubmit = async () => {
     // Validation: 400 Bad Request -> Missing name
     if (!name.trim()) {
@@ -91,7 +111,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
         description: description.trim(),
       };
 
-      const url = isEditMode && product?.id ? `${API_URL}/${product.id}` : API_URL;
+      const url = isEditMode && product?.id ? `${getApiUrl()}/${product.id}` : getApiUrl();
       const method = isEditMode ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

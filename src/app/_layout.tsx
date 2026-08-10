@@ -14,13 +14,15 @@ export default function TabLayout() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const user = localStorage.getItem('user');
-      // If not logged in and not on login page, redirect to /login
-      if (!user && pathname !== '/login') {
-        router.replace('/login' as any);
+    const checkAuthAndRedirect = () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const user = localStorage.getItem('user');
+        if (!user && pathname !== '/login') {
+          router.replace('/login' as any);
+        }
       }
-    }
+    };
+    checkAuthAndRedirect();
   }, [pathname]);
 
   return (

@@ -19,7 +19,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3032/api/products' : 'http://localhost:3032/api/products';
+const getApiUrl = () => {
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3032/api/products';
+  }
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const host = window.location.hostname || 'localhost';
+    return `http://${host}:3032/api/products`;
+  }
+  return 'http://localhost:3032/api/products';
+};
 
 interface Product {
   id: string | number;
@@ -72,7 +81,7 @@ export default function ProductScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(API_URL);
+      const response = await fetch(getApiUrl());
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -92,7 +101,7 @@ export default function ProductScreen() {
 
   const confirmAndDelete = async (productId: string | number, productName: string) => {
     try {
-      const response = await fetch(`${API_URL}/${productId}`, {
+      const response = await fetch(`${getApiUrl()}/${productId}`, {
         method: 'DELETE',
       });
       const data = await response.json();

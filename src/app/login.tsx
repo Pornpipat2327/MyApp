@@ -18,9 +18,19 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-const BASE_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3032' : 'http://localhost:3032';
-const AUTH_LOGIN_URL = `${BASE_URL}/api/auth/login`;
-const AUTH_REGISTER_URL = `${BASE_URL}/api/auth/register`;
+const getBaseUrl = () => {
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3032';
+  }
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const host = window.location.hostname || 'localhost';
+    return `http://${host}:3032`;
+  }
+  return 'http://localhost:3032';
+};
+
+const AUTH_LOGIN_URL = `${getBaseUrl()}/api/auth/login`;
+const AUTH_REGISTER_URL = `${getBaseUrl()}/api/auth/register`;
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -58,7 +68,8 @@ export default function LoginScreen() {
     setErrorMsg(null);
 
     try {
-      const response = await fetch(AUTH_LOGIN_URL, {
+      const loginUrl = `${getBaseUrl()}/api/auth/login`;
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,15 +85,15 @@ export default function LoginScreen() {
       if (response.ok && data.success) {
         setCurrentUser(data.user);
         if (Platform.OS === 'web') {
-          window.alert(`Welcome back, ${data.user.username}!`);
           if (data.token) {
             localStorage.setItem('userToken', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
           }
+          localStorage.setItem('user', JSON.stringify(data.user));
+          window.alert(`Welcome back, ${data.user.username}!`);
         } else {
           Alert.alert('Success', `Welcome back, ${data.user.username}!`);
         }
-        router.push('/product');
+        router.replace('/');
       } else {
         const msg = data.message || 'Login failed. Please check credentials.';
         setErrorMsg(msg);
@@ -105,7 +116,8 @@ export default function LoginScreen() {
     setErrorMsg(null);
 
     try {
-      const response = await fetch(AUTH_REGISTER_URL, {
+      const registerUrl = `${getBaseUrl()}/api/auth/register`;
+      const response = await fetch(registerUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -335,6 +347,31 @@ export default function LoginScreen() {
                     </ThemedText>
                   )}
                 </Pressable>
+
+                {/* Quick Test Fill for Admin */}
+                {mode === 'login' && (
+                  <View style={styles.quickFillContainer}>
+                    <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.two }}>
+                      💡 Quick Test Login Credentials:
+                    </ThemedText>
+                    <Pressable
+                      onPress={() => {
+                        setUsername('admin');
+                        setPassword('adminpassword');
+                        setErrorMsg(null);
+                      }}
+                      style={({ pressed }) => [
+                        styles.quickFillButton,
+                        { backgroundColor: theme.background },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <ThemedText type="smallBold" style={{ color: '#007AFF', textAlign: 'center' }}>
+                        🔑 Fill Default Admin (admin / adminpassword)
+                      </ThemedText>
+                    </Pressable>
+                  </View>
+                )}
               </>
             )}
           </ThemedView>
@@ -446,5 +483,18 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  quickFillContainer: {
+    marginTop: Spacing.four,
+    paddingTop: Spacing.three,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128,128,128,0.15)',
+  },
+  quickFillButton: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.3)',
   },
 });
