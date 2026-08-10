@@ -146,7 +146,11 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           setSelectedCategory(null);
         }
 
-        if (onSuccess) onSuccess();
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push('/product');
+        }
       } else {
         // 400 Bad Request or 500 Server Error
         const errorMsg = data.error || data.message || (isEditMode ? 'Failed to update product' : 'Failed to add product');
