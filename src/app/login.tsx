@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  Pressable,
-  TextInput,
-  Platform,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TopHeader } from '@/components/top-header';
+import { getBaseUrl } from '@/constants/api';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getBaseUrl } from '@/constants/api';
+import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const AUTH_LOGIN_URL = `${getBaseUrl()}/api/auth/login`;
 const AUTH_REGISTER_URL = `${getBaseUrl()}/api/auth/register`;
