@@ -17,17 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-
-const getBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3032';
-  }
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
-    return `http://${host}:3032`;
-  }
-  return 'http://localhost:3032';
-};
+import { getBaseUrl } from '@/constants/api';
 
 const AUTH_LOGIN_URL = `${getBaseUrl()}/api/auth/login`;
 const AUTH_REGISTER_URL = `${getBaseUrl()}/api/auth/register`;

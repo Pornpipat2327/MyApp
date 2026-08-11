@@ -4,16 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AddProductScreen, { EditableProduct } from './add';
 import { ThemedView } from '@/components/themed-view';
 
-const getApiUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3032/api/products';
-  }
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
-    return `http://${host}:3032/api/products`;
-  }
-  return 'http://localhost:3032/api/products';
-};
+import { getProductsApiUrl } from '@/constants/api';
 
 export type EditProductScreenProps = {
   product?: EditableProduct | null;
@@ -60,7 +51,7 @@ export default function EditProductScreen({
     // Or fetch from API using product ID
     if (params.id) {
       setFetching(true);
-      fetch(`${getApiUrl()}/${params.id}`)
+      fetch(`${getProductsApiUrl()}/${params.id}`)
         .then((res) => res.json())
         .then((resData) => {
           if (resData.success && resData.data) {
@@ -93,6 +84,8 @@ export default function EditProductScreen({
       onSuccess();
     } else if (router.canGoBack()) {
       router.back();
+    } else {
+      router.push('/product');
     }
   };
 
@@ -101,6 +94,8 @@ export default function EditProductScreen({
       onCancel();
     } else if (router.canGoBack()) {
       router.back();
+    } else {
+      router.push('/product');
     }
   };
 

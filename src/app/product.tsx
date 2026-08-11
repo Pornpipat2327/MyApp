@@ -18,17 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { getProductsApiUrl } from '@/constants/api';
 
-const getApiUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3032/api/products';
-  }
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
-    return `http://${host}:3032/api/products`;
-  }
-  return 'http://localhost:3032/api/products';
-};
 
 interface Product {
   id: string | number;
@@ -40,17 +31,7 @@ interface Product {
   image?: string;
 }
 
-// Map image path strings from the API to local require() assets.
-// React Native requires static require calls, so we map them explicitly.
-const IMAGE_MAP: Record<string, any> = {
-  '@/assets/images/keyboard_mechanical_rgb.png': require('@/assets/images/keyboard_mechanical_rgb.png'),
-  '@/assets/images/keyboard_wireless_white.png': require('@/assets/images/keyboard_wireless_white.png'),
-  '@/assets/images/keyboard_retro_vintage.png': require('@/assets/images/keyboard_retro_vintage.png'),
-  '@/assets/images/keyboard_ergonomic_split.png': require('@/assets/images/keyboard_ergonomic_split.png'),
-  '@/assets/images/keyboard_compact_60.png': require('@/assets/images/keyboard_compact_60.png'),
-};
 
-const DEFAULT_IMAGE = require('@/assets/images/keyboard_mechanical_rgb.png');
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
@@ -81,12 +62,21 @@ export default function ProductScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(getApiUrl());
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const response = await fetch(getProductsApiUrl());
       const json = await response.json();
-      const items: Product[] = Array.isArray(json) ? json : (json.data || []);
+      if (!response.ok || (json && json.success === false)) {
+        throw new Error(json?.message || `HTTP error! status: ${response.status}`);
+      }
+      const rawData = Array.isArray(json) ? json : json.data || [];
+      const items: Product[] = rawData.map((d: any) => ({
+        id: d.id ?? d.Product_ID ?? d.ProductCode,
+        name: d.name ?? d.Name ?? '',
+        category: d.category ?? d.Category ?? 'General',
+        price: d.price ?? d.Price ?? 0,
+        rating: d.rating ?? d.Rating ?? 4.5,
+        description: d.description ?? d.Description ?? '',
+        image: d.image ?? d.Image ?? d.image_url ?? '',
+      }));
       setProducts(items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load products');
@@ -101,7 +91,7 @@ export default function ProductScreen() {
 
   const confirmAndDelete = async (productId: string | number, productName: string) => {
     try {
-      const response = await fetch(`${getApiUrl()}/${productId}`, {
+      const response = await fetch(`${getProductsApiUrl()}/${productId}`, {
         method: 'DELETE',
       });
       const data = await response.json();
@@ -147,14 +137,10 @@ export default function ProductScreen() {
   };
 
   const getImageSource = (imagePath?: string) => {
-    if (!imagePath) return DEFAULT_IMAGE;
-    if (IMAGE_MAP[imagePath]) {
-      return IMAGE_MAP[imagePath];
-    }
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
+    if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:'))) {
       return { uri: imagePath };
     }
-    return DEFAULT_IMAGE;
+    return null;
   };
 
   const handleToggleSort = () => {
@@ -293,11 +279,17 @@ export default function ProductScreen() {
             <View style={styles.productsGrid}>
               {sortedProducts.map((product, index) => (
                 <ThemedView key={product.id ?? index} type="backgroundElement" style={styles.card}>
-                  <Image
-                    source={getImageSource(product.image)}
-                    style={styles.productImage}
-                    resizeMode="cover"
-                  />
+                  {getImageSource(product.image) ? (
+                    <Image
+                      source={getImageSource(product.image)!}
+                      style={styles.productImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.productImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.backgroundSelected }]}>
+                      <SymbolView name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' }} tintColor={theme.textSecondary} size={48} />
+                    </View>
+                  )}
                   <View style={styles.cardContent}>
                     <View style={styles.categoryRow}>
                       <ThemedText type="small" themeColor="textSecondary" style={styles.categoryText}>
@@ -327,11 +319,6 @@ export default function ProductScreen() {
                               pathname: '/edit' as any,
                               params: {
                                 id: String(product.id),
-                                name: product.name,
-                                price: String(product.price || 0),
-                                category: product.category || '',
-                                description: product.description || '',
-                                image: product.image || '',
                               },
                             })
                           }

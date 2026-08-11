@@ -8,28 +8,20 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import * as ImagePicker from 'expo-image-picker';
 import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { getProductsApiUrl, getUploadApiUrl } from '@/constants/api';
 
 const CATEGORIES = ['Gaming', 'Wireless', 'Vintage', 'Ergonomic', 'Compact', 'Mechanical'];
-
-const getApiUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3032/api/products';
-  }
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const host = window.location.hostname || 'localhost';
-    return `http://${host}:3032/api/products`;
-  }
-  return 'http://localhost:3032/api/products';
-};
 
 export interface EditableProduct {
   id?: string;
@@ -60,9 +52,11 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
   const [stock, setStock] = useState(product?.stock !== undefined ? String(product.stock) : '10');
   const [location, setLocation] = useState(product?.location_text ?? '');
   const [imageUrl, setImageUrl] = useState(product?.image_url ?? '');
+  const [imagePreview, setImagePreview] = useState<string | null>(product?.image_url ?? null);
   const [description, setDescription] = useState(product?.description ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(product?.category ?? null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -80,13 +74,72 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
       setStock(product.stock !== undefined ? String(product.stock) : '10');
       setLocation(product.location_text ?? '');
       setImageUrl(product.image_url ?? '');
+      setImagePreview(product.image_url ?? null);
       setDescription(product.description ?? '');
       setSelectedCategory(product.category ?? null);
     }
   }, [product]);
 
+  const pickImage = async () => {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
+        return;
+      }
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images',
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+    const asset = result.assets[0];
+    setImagePreview(asset.uri);
+    setUploading(true);
+
+    try {
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const base64Data = `data:${mimeType};base64,${asset.base64}`;
+
+      const response = await fetch(getUploadApiUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Data }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.success && data.url) {
+        setImageUrl(data.url);
+      } else {
+        const msg = data.message || 'Failed to upload image';
+        if (Platform.OS === 'web') alert(msg);
+        else Alert.alert('Upload Failed', msg);
+        setImagePreview(null);
+        setImageUrl('');
+      }
+    } catch (err: any) {
+      const msg = 'Cannot connect to server. Please check your connection.';
+      if (Platform.OS === 'web') alert(msg);
+      else Alert.alert('Upload Error', msg);
+      setImagePreview(null);
+      setImageUrl('');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setImageUrl('');
+  };
+
   const handleSubmit = async () => {
-    // Validation: 400 Bad Request -> Missing name
     if (!name.trim()) {
       if (Platform.OS === 'web') {
         alert('400 Bad Request: Missing product name');
@@ -99,7 +152,6 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
     setLoading(true);
 
     try {
-      // Build product object from form state according to Slide 5, 7 & 8
       const payload = {
         name: name.trim(),
         price: parseFloat(price) || 0,
@@ -107,18 +159,16 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
         category: selectedCategory || '',
         location_text: location.trim() || 'Store Front',
         badge_status: product?.badge_status || 'Active',
-        image_url: imageUrl.trim() || null,
+        image_url: imageUrl || null,
         description: description.trim(),
       };
 
-      const url = isEditMode && product?.id ? `${getApiUrl()}/${product.id}` : getApiUrl();
+      const url = isEditMode && product?.id ? `${getProductsApiUrl()}/${product.id}` : getProductsApiUrl();
       const method = isEditMode ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -136,12 +186,12 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
         }
 
         if (!isEditMode) {
-          // Reset form on Add
           setName('');
           setPrice('');
           setStock('10');
           setLocation('');
           setImageUrl('');
+          setImagePreview(null);
           setDescription('');
           setSelectedCategory(null);
         }
@@ -152,7 +202,6 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           router.push('/product');
         }
       } else {
-        // 400 Bad Request or 500 Server Error
         const errorMsg = data.error || data.message || (isEditMode ? 'Failed to update product' : 'Failed to add product');
         if (Platform.OS === 'web') {
           alert(`Error (${response.status}): ${errorMsg}`);
@@ -259,17 +308,60 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
               />
             </View>
 
-            {/* Image URL */}
+            {/* Image Upload */}
             <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Image URL</ThemedText>
-              <TextInput
-                value={imageUrl}
-                onChangeText={setImageUrl}
-                placeholder="https://example.com/image.jpg"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="url"
-                style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
-              />
+              <ThemedText type="smallBold" style={styles.label}>Product Image</ThemedText>
+
+              {imagePreview ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image
+                    source={{ uri: imagePreview }}
+                    style={styles.imagePreview}
+                    resizeMode="cover"
+                  />
+                  {uploading && (
+                    <View style={styles.uploadingOverlay}>
+                      <ActivityIndicator size="large" color="#ffffff" />
+                      <ThemedText type="small" style={{ color: '#ffffff', marginTop: 8 }}>Uploading...</ThemedText>
+                    </View>
+                  )}
+                  {!uploading && (
+                    <View style={styles.imageActions}>
+                      <Pressable
+                        onPress={pickImage}
+                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#007AFF' }, pressed && styles.pressed]}
+                      >
+                        <SymbolView tintColor="#fff" name={{ ios: 'arrow.triangle.2.circlepath', android: 'refresh', web: 'refresh' }} size={14} />
+                        <ThemedText type="small" style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Change</ThemedText>
+                      </Pressable>
+                      <Pressable
+                        onPress={removeImage}
+                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#FF3B30' }, pressed && styles.pressed]}
+                      >
+                        <SymbolView tintColor="#fff" name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={14} />
+                        <ThemedText type="small" style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Remove</ThemedText>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <Pressable
+                  onPress={pickImage}
+                  style={({ pressed }) => [
+                    styles.uploadPlaceholder,
+                    { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundSelected + '40' },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={[styles.uploadIcon, { backgroundColor: '#007AFF18' }]}>
+                    <SymbolView tintColor="#007AFF" name={{ ios: 'photo.badge.plus', android: 'add_photo_alternate', web: 'add_photo_alternate' }} size={28} />
+                  </View>
+                  <ThemedText type="smallBold" style={{ color: '#007AFF', fontSize: 14 }}>เลือกรูปภาพ</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
+                    Tap to browse your photo library
+                  </ThemedText>
+                </Pressable>
+              )}
             </View>
 
             {/* Category Picker */}
@@ -324,11 +416,11 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
             {/* Submit Button */}
             <Pressable
               onPress={handleSubmit}
-              disabled={loading}
+              disabled={loading || uploading}
               style={({ pressed }) => [
                 styles.submitButton,
                 pressed && styles.submitPressed,
-                loading && { opacity: 0.6 },
+                (loading || uploading) && { opacity: 0.6 },
               ]}
             >
               {loading ? (
@@ -341,7 +433,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                     size={18}
                   />
                   <ThemedText type="smallBold" style={styles.submitText}>
-                    Add Product
+                    {isEditMode ? 'Update Product' : 'Add Product'}
                   </ThemedText>
                 </>
               )}
@@ -354,15 +446,9 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  scrollView: { flex: 1 },
   scrollContent: {
     alignItems: 'center',
     paddingBottom: BottomTabInset + Spacing.four,
@@ -384,14 +470,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.two,
   },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-  },
-  pageSubtitle: {
-    textAlign: 'center',
-    maxWidth: 400,
-  },
+  pageTitle: { fontSize: 28, fontWeight: '800' },
+  pageSubtitle: { textAlign: 'center', maxWidth: 400 },
   formCard: {
     width: '100%',
     maxWidth: MaxContentWidth,
@@ -400,52 +480,75 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.four,
     ...Platform.select({
-      web: {
-        width: `calc(100% - ${Spacing.four * 2}px)`,
-      },
+      web: { width: `calc(100% - ${Spacing.four * 2}px)` },
     }),
   },
-  fieldGroup: {
-    gap: Spacing.two,
-  },
-  label: {
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
+  fieldGroup: { gap: Spacing.two },
+  label: { fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 },
   input: {
     borderWidth: 1,
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 4,
     fontSize: 15,
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
+    ...Platform.select({ web: { outlineStyle: 'none' } }),
   },
-  textArea: {
-    minHeight: 100,
-    paddingTop: Spacing.two + 4,
-  },
-  categoryChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  textArea: { minHeight: 100, paddingTop: Spacing.two + 4 },
+  // ── Image Upload ──
+  uploadPlaceholder: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: Spacing.three,
+    paddingVertical: Spacing.five,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.two,
   },
+  uploadIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.one,
+  },
+  imagePreviewContainer: {
+    borderRadius: Spacing.three,
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    backgroundColor: 'rgba(128,128,128,0.08)',
+  },
+  uploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    padding: Spacing.two,
+  },
+  imageActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+    paddingVertical: Spacing.two,
+    borderRadius: Spacing.two,
+  },
+  categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one + 2,
     borderRadius: Spacing.five,
   },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  pressed: { opacity: 0.7 },
   submitButton: {
     backgroundColor: '#007AFF',
     flexDirection: 'row',
@@ -456,12 +559,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     marginTop: Spacing.two,
   },
-  submitPressed: {
-    opacity: 0.85,
-  },
-  submitText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-  },
+  submitPressed: { opacity: 0.85 },
+  submitText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
 });
+
