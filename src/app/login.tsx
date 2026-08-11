@@ -114,7 +114,6 @@ export default function LoginScreen() {
         },
         body: JSON.stringify({
           username: username.trim(),
-          email: email.trim(),
           password: password.trim(),
         }),
       });
@@ -280,26 +279,7 @@ export default function LoginScreen() {
                   />
                 </View>
 
-                {/* Email Input (Register mode only) */}
-                {mode === 'register' && (
-                  <View style={styles.inputGroup}>
-                    <ThemedText type="smallBold" style={styles.inputLabel}>
-                      Email Address
-                    </ThemedText>
-                    <TextInput
-                      placeholder="Enter email address"
-                      placeholderTextColor={theme.textSecondary}
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      style={[
-                        styles.input,
-                        { color: theme.text, backgroundColor: theme.background, borderColor: 'rgba(128,128,128,0.2)' },
-                      ]}
-                    />
-                  </View>
-                )}
+
 
                 {/* Password Input */}
                 <View style={styles.inputGroup}>
