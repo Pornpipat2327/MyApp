@@ -33,6 +33,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +46,9 @@ export default function HomeScreen() {
       router.replace('/login' as any);
     } else {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        setIsAdmin(parsedUser?.role === 'admin');
       } catch (e) {
         router.replace('/login' as any);
       }
@@ -133,7 +136,7 @@ export default function HomeScreen() {
           {/* Quick Actions */}
           <SectionHeader title="Quick Actions" />
           <View style={[styles.content, styles.actionsRow]}>
-            {QUICK_ACTIONS.map((a) => (
+            {QUICK_ACTIONS.filter((a) => isAdmin || a.id !== 'qa1').map((a) => (
               <Pressable
                 key={a.id}
                 onPress={() => router.push(a.route as any)}

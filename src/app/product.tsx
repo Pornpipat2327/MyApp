@@ -44,13 +44,20 @@ export default function ProductScreen() {
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('default');
   const [searchQuery, setSearchQuery] = useState(params.category || '');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      const user = localStorage.getItem('user');
-      if (!user) {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
         router.replace('/login' as any);
         return;
+      }
+      try {
+        const userObj = JSON.parse(userStr);
+        setIsAdmin(userObj?.role === 'admin');
+      } catch (e) {
+        setIsAdmin(false);
       }
     }
     if (params.category) {
@@ -312,39 +319,41 @@ export default function ProductScreen() {
                       <ThemedText type="default" style={styles.priceText}>
                         {formatPrice(product.price)}
                       </ThemedText>
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <Pressable
-                          onPress={() =>
-                            router.push({
-                              pathname: '/edit' as any,
-                              params: {
-                                id: String(product.id),
-                              },
-                            })
-                          }
-                          style={({ pressed }) => [
-                            styles.buyButton,
-                            { backgroundColor: '#FF9500' },
-                            pressed && styles.pressed,
-                          ]}
-                        >
-                          <ThemedText type="smallBold" style={styles.buyButtonText}>
-                            Edit
-                          </ThemedText>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => handleDeleteProduct(product.id, product.name)}
-                          style={({ pressed }) => [
-                            styles.buyButton,
-                            { backgroundColor: '#FF3B30' },
-                            pressed && styles.pressed,
-                          ]}
-                        >
-                          <ThemedText type="smallBold" style={styles.buyButtonText}>
-                            Delete
-                          </ThemedText>
-                        </Pressable>
-                      </View>
+                      {isAdmin && (
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <Pressable
+                            onPress={() =>
+                              router.push({
+                                pathname: '/edit' as any,
+                                params: {
+                                  id: String(product.id),
+                                },
+                              })
+                            }
+                            style={({ pressed }) => [
+                              styles.buyButton,
+                              { backgroundColor: '#FF9500' },
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <ThemedText type="smallBold" style={styles.buyButtonText}>
+                              Edit
+                            </ThemedText>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => handleDeleteProduct(product.id, product.name)}
+                            style={({ pressed }) => [
+                              styles.buyButton,
+                              { backgroundColor: '#FF3B30' },
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <ThemedText type="smallBold" style={styles.buyButtonText}>
+                              Delete
+                            </ThemedText>
+                          </Pressable>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </ThemedView>
