@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  Pressable,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { TopHeader } from '@/components/top-header';
+import { getProductsApiUrl } from '@/constants/api';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Category {
   id: string;
@@ -72,6 +74,8 @@ export default function CategoriesScreen() {
   const theme = useTheme();
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [categoriesList, setCategoriesList] = useState<Category[]>(CATEGORIES);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -80,7 +84,43 @@ export default function CategoriesScreen() {
         router.replace('/login' as any);
       }
     }
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(getProductsApiUrl());
+      const json = await response.json();
+      
+      const rawData = Array.isArray(json) ? json : json.data || [];
+
+      const counts: Record<string, number> = {};
+      rawData.forEach((p: any) => {
+        const catName = p.category ?? p.Category ?? 'Other';
+        counts[catName] = (counts[catName] || 0) + 1;
+      });
+
+      const newCategories: Category[] = [];
+      let idCounter = 1;
+
+      for (const [name, count] of Object.entries(counts)) {
+        const existing = CATEGORIES.find(c => c.name.toLowerCase() === name.toLowerCase());
+        newCategories.push({
+          id: String(idCounter++),
+          name: existing ? existing.name : name,
+          icon: existing ? existing.icon : { ios: 'square.grid.2x2.fill', android: 'category', web: 'category' },
+          color: existing ? existing.color : '#888888',
+          count: count
+        });
+      }
+
+      setCategoriesList(newCategories);
+    } catch (error) {
+      console.error('Failed to fetch products', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectCategory = (cat: Category) => {
     setSelectedId(cat.id);
@@ -112,9 +152,12 @@ export default function CategoriesScreen() {
 
           {/* Category Cards Grid */}
           <View style={styles.grid}>
-            {CATEGORIES.map((cat) => {
-              const isSelected = selectedId === cat.id;
-              return (
+            {loading ? (
+              <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 40 }} />
+            ) : (
+              categoriesList.map((cat) => {
+                const isSelected = selectedId === cat.id;
+                return (
                 <Pressable
                   key={cat.id}
                   onPress={() => handleSelectCategory(cat)}
@@ -155,28 +198,30 @@ export default function CategoriesScreen() {
                   </ThemedView>
                 </Pressable>
               );
-            })}
+            }))}
           </View>
 
           {/* Stats Row */}
-          <View style={styles.statsRow}>
-            <ThemedView type="backgroundElement" style={styles.statCard}>
-              <ThemedText type="subtitle" style={styles.statNumber}>
-                {CATEGORIES.length}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Categories
-              </ThemedText>
-            </ThemedView>
-            <ThemedView type="backgroundElement" style={styles.statCard}>
-              <ThemedText type="subtitle" style={styles.statNumber}>
-                {CATEGORIES.reduce((sum, c) => sum + c.count, 0)}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Total Products
-              </ThemedText>
-            </ThemedView>
-          </View>
+          {!loading && (
+            <View style={styles.statsRow}>
+              <ThemedView type="backgroundElement" style={styles.statCard}>
+                <ThemedText type="subtitle" style={styles.statNumber}>
+                  {categoriesList.length}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Categories
+                </ThemedText>
+              </ThemedView>
+              <ThemedView type="backgroundElement" style={styles.statCard}>
+                <ThemedText type="subtitle" style={styles.statNumber}>
+                  {categoriesList.reduce((sum, c) => sum + c.count, 0)}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Total Products
+                </ThemedText>
+              </ThemedView>
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
