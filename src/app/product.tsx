@@ -4,7 +4,7 @@ import { TopHeader } from '@/components/top-header';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,8 +17,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getProductsApiUrl } from '@/constants/api';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 
 interface Product {
