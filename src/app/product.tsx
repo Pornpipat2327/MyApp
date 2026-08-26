@@ -285,78 +285,93 @@ export default function ProductScreen() {
           {!loading && !error && sortedProducts.length > 0 && (
             <View style={styles.productsGrid}>
               {sortedProducts.map((product, index) => (
-                <ThemedView key={product.id ?? index} type="backgroundElement" style={styles.card}>
-                  {getImageSource(product.image) ? (
-                    <Image
-                      source={getImageSource(product.image)!}
-                      style={styles.productImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={[styles.productImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.backgroundSelected }]}>
-                      <SymbolView name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' }} tintColor={theme.textSecondary} size={48} />
-                    </View>
-                  )}
-                  <View style={styles.cardContent}>
-                    <View style={styles.categoryRow}>
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.categoryText}>
-                        {product.category || 'General'}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.ratingText}>
-                        ★ {product.rating ?? '4.5'}
-                      </ThemedText>
-                    </View>
+                <Pressable
+                  key={product.id ?? index}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/detail' as any,
+                      params: { id: String(product.id) },
+                    })
+                  }
+                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <ThemedView type="backgroundElement" style={styles.card}>
+                    {getImageSource(product.image) ? (
+                      <Image
+                        source={getImageSource(product.image)!}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.productImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: theme.backgroundSelected }]}>
+                        <SymbolView name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' }} tintColor={theme.textSecondary} size={48} />
+                      </View>
+                    )}
+                    <View style={styles.cardContent}>
+                      <View style={styles.categoryRow}>
+                        <ThemedText type="small" themeColor="textSecondary" style={styles.categoryText}>
+                          {product.category || 'General'}
+                        </ThemedText>
+                        <ThemedText type="small" style={styles.ratingText}>
+                          ★ {product.rating ?? '4.5'}
+                        </ThemedText>
+                      </View>
 
-                    <ThemedText type="smallBold" style={styles.productName}>
-                      {product.name}
-                    </ThemedText>
-
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
-                      {product.description || 'No description available.'}
-                    </ThemedText>
-
-                    <View style={styles.priceRow}>
-                      <ThemedText type="default" style={styles.priceText}>
-                        {formatPrice(product.price)}
+                      <ThemedText type="smallBold" style={styles.productName}>
+                        {product.name}
                       </ThemedText>
-                      {isAdmin && (
-                        <View style={{ flexDirection: 'row', gap: 6 }}>
-                          <Pressable
-                            onPress={() =>
-                              router.push({
-                                pathname: '/edit' as any,
-                                params: {
-                                  id: String(product.id),
-                                },
-                              })
-                            }
-                            style={({ pressed }) => [
-                              styles.buyButton,
-                              { backgroundColor: '#FF9500' },
-                              pressed && styles.pressed,
-                            ]}
-                          >
-                            <ThemedText type="smallBold" style={styles.buyButtonText}>
-                              Edit
-                            </ThemedText>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => handleDeleteProduct(product.id, product.name)}
-                            style={({ pressed }) => [
-                              styles.buyButton,
-                              { backgroundColor: '#FF3B30' },
-                              pressed && styles.pressed,
-                            ]}
-                          >
-                            <ThemedText type="smallBold" style={styles.buyButtonText}>
-                              Delete
-                            </ThemedText>
-                          </Pressable>
-                        </View>
-                      )}
+
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
+                        {product.description || 'No description available.'}
+                      </ThemedText>
+
+                      <View style={styles.priceRow}>
+                        <ThemedText type="default" style={styles.priceText}>
+                          {formatPrice(product.price)}
+                        </ThemedText>
+                        {isAdmin && (
+                          <View style={{ flexDirection: 'row', gap: 6 }}>
+                            <Pressable
+                              onPress={(e) => {
+                                e.stopPropagation?.();
+                                router.push({
+                                  pathname: '/edit' as any,
+                                  params: {
+                                    id: String(product.id),
+                                  },
+                                });
+                              }}
+                              style={({ pressed }) => [
+                                styles.buyButton,
+                                { backgroundColor: '#FF9500' },
+                                pressed && styles.pressed,
+                              ]}
+                            >
+                              <ThemedText type="smallBold" style={styles.buyButtonText}>
+                                Edit
+                              </ThemedText>
+                            </Pressable>
+                            <Pressable
+                              onPress={(e) => {
+                                e.stopPropagation?.();
+                                handleDeleteProduct(product.id, product.name);
+                              }}
+                              style={({ pressed }) => [
+                                styles.buyButton,
+                                { backgroundColor: '#FF3B30' },
+                                pressed && styles.pressed,
+                              ]}
+                            >
+                              <ThemedText type="smallBold" style={styles.buyButtonText}>
+                                Delete
+                              </ThemedText>
+                            </Pressable>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                </ThemedView>
+                  </ThemedView>
+                </Pressable>
               ))}
             </View>
           )}

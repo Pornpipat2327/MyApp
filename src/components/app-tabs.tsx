@@ -56,6 +56,10 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="edit" style={{ display: 'none' }}>
         <NativeTabs.Trigger.Label>Edit</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="detail" style={{ display: 'none' }}>
+        <NativeTabs.Trigger.Label>Detail</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
