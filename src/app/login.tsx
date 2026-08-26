@@ -67,8 +67,8 @@ export default function LoginScreen() {
 
       if (response.ok && data.success) {
         const userData = {
-          username: data.username || username.trim(),
-          role: data.role || 'user',
+          username: data.user?.username || data.username || username.trim(),
+          role: data.user?.role || data.role || 'user',
           token: data.token,
         };
 
