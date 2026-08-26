@@ -335,20 +335,18 @@ export default function ProductDetailScreen() {
                     </View>
                   )}
 
-                  {/* Location — only if API returns it */}
-                  {!!product.location_text && (
-                    <View style={[styles.specItem, { backgroundColor: theme.background }]}>
-                      <SymbolView
-                        tintColor="#AF52DE"
-                        name={{ ios: 'mappin.circle', android: 'location_on', web: 'location_on' } as any}
-                        size={20}
-                      />
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Location</ThemedText>
-                      <ThemedText type="smallBold" style={styles.specValue} numberOfLines={2}>
-                        {product.location_text}
-                      </ThemedText>
-                    </View>
-                  )}
+                  {/* Location */}
+                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+                    <SymbolView
+                      tintColor="#AF52DE"
+                      name={{ ios: 'mappin.circle', android: 'location_on', web: 'location_on' } as any}
+                      size={20}
+                    />
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Location</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.specValue, { color: '#AF52DE' }]} numberOfLines={2}>
+                      {product.location_text || 'Store Front'}
+                    </ThemedText>
+                  </View>
                 </View>
 
                 {/* Divider */}
