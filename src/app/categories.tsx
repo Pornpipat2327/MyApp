@@ -141,64 +141,65 @@ export default function CategoriesScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Page Header */}
-          <View style={styles.pageHeader}>
+          <ThemedView type="backgroundElement" style={styles.pageHeader}>
             <ThemedText type="subtitle" style={styles.pageTitle}>
               Categories
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.pageSubtitle}>
-              Browse products by category to find exactly what you need.
+              Browse keyboards by category, layout, and purpose.
             </ThemedText>
-          </View>
+          </ThemedView>
 
           {/* Category Cards Grid */}
           <View style={styles.grid}>
             {loading ? (
-              <ActivityIndicator size="large" color={theme.text} style={{ marginTop: 40 }} />
+              <View style={{ padding: 32, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={theme.text} />
+                <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 8 }}>Loading categories...</ThemedText>
+              </View>
             ) : (
               categoriesList.map((cat) => {
                 const isSelected = selectedId === cat.id;
                 return (
-                <Pressable
-                  key={cat.id}
-                  onPress={() => handleSelectCategory(cat)}
-                  style={({ pressed }) => [pressed && styles.pressed]}
-                >
-                  <ThemedView
-                    type={isSelected ? 'backgroundSelected' : 'backgroundElement'}
-                    style={[
-                      styles.categoryCard,
-                      isSelected && { borderColor: cat.color, borderWidth: 2 },
-                    ]}
+                  <Pressable
+                    key={cat.id}
+                    onPress={() => handleSelectCategory(cat)}
+                    style={({ pressed }) => [pressed && styles.pressed]}
                   >
-                    {/* Icon Circle */}
-                    <View style={[styles.iconCircle, { backgroundColor: cat.color + '20' }]}>
+                    <ThemedView
+                      type={isSelected ? 'backgroundSelected' : 'backgroundElement'}
+                      style={styles.categoryCard}
+                    >
+                      {/* Icon Circle */}
+                      <View style={[styles.iconCircle, { backgroundColor: cat.color }]}>
+                        <SymbolView
+                          tintColor="#ffffff"
+                          name={cat.icon as any}
+                          size={22}
+                        />
+                      </View>
+
+                      {/* Category Info */}
+                      <View style={styles.categoryInfo}>
+                        <ThemedText type="smallBold" style={styles.categoryName}>
+                          {cat.name}
+                        </ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary" style={styles.categoryCount}>
+                          {cat.count} products
+                        </ThemedText>
+                      </View>
+
+                      {/* Arrow */}
                       <SymbolView
-                        tintColor={cat.color}
-                        name={cat.icon}
-                        size={24}
+                        tintColor={theme.textSecondary}
+                        name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+                        size={16}
                       />
-                    </View>
-
-                    {/* Category Info */}
-                    <View style={styles.categoryInfo}>
-                      <ThemedText type="smallBold" style={styles.categoryName}>
-                        {cat.name}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.categoryCount}>
-                        {cat.count} products
-                      </ThemedText>
-                    </View>
-
-                    {/* Arrow */}
-                    <SymbolView
-                      tintColor={theme.textSecondary}
-                      name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-                      size={16}
-                    />
-                  </ThemedView>
-                </Pressable>
-              );
-            }))}
+                    </ThemedView>
+                  </Pressable>
+                );
+              })
+            )}
           </View>
 
           {/* Stats Row */}
@@ -209,7 +210,7 @@ export default function CategoriesScreen() {
                   {categoriesList.length}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Categories
+                  Total Categories
                 </ThemedText>
               </ThemedView>
               <ThemedView type="backgroundElement" style={styles.statCard}>
@@ -217,7 +218,7 @@ export default function CategoriesScreen() {
                   {categoriesList.reduce((sum, c) => sum + c.count, 0)}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Total Products
+                  Total Keyboards
                 </ThemedText>
               </ThemedView>
             </View>
@@ -245,14 +246,22 @@ const styles = StyleSheet.create({
   pageHeader: {
     width: '100%',
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
+    paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.six,
+    borderRadius: Spacing.four,
+    marginTop: Spacing.three,
+    marginBottom: Spacing.four,
     gap: Spacing.two,
+    ...Platform.select({
+      web: {
+        width: `calc(100% - ${Spacing.four * 2}px)` as any,
+      },
+    }),
   },
   pageTitle: {
     fontSize: 28,
     fontWeight: '800',
+    lineHeight: 34,
   },
   pageSubtitle: {
     maxWidth: 500,
@@ -266,14 +275,14 @@ const styles = StyleSheet.create({
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.three,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -297,17 +306,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
-    marginTop: Spacing.five,
+    marginTop: Spacing.four,
   },
   statCard: {
     flex: 1,
     alignItems: 'center',
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.three,
     paddingVertical: Spacing.four,
     gap: Spacing.one,
   },
   statNumber: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
   },
 });

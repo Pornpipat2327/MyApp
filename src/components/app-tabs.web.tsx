@@ -35,6 +35,7 @@ export default function AppTabs() {
           {/* Hidden screens — registered for navigation but not shown in tab bar */}
           <TabTrigger name="login" href="/login" style={{ display: 'none' }} />
           <TabTrigger name="edit" href="/edit" style={{ display: 'none' }} />
+          <TabTrigger name="detail" href="/detail" style={{ display: 'none' }} />
         </CustomTabList>
       </TabList>
     </Tabs>
@@ -64,7 +65,7 @@ export function TabButton({ children, isFocused, iconName, ...props }: CustomTab
         style={styles.tabButtonView}>
         <SymbolView
           tintColor={isFocused ? colors.text : colors.textSecondary}
-          name={{ ios: icon.ios, web: icon.web }}
+          name={{ ios: icon.ios, web: icon.web } as any}
           size={16}
         />
         <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     zIndex: 100,
-  },
+  } as any,
   innerContainer: {
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,

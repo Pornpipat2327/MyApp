@@ -5,7 +5,8 @@ import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -40,21 +41,25 @@ export default function ProductDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        router.replace('/login' as any);
-        return;
+  // Re-check role every time this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'web') {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          router.replace('/login' as any);
+          return;
+        }
+        try {
+          const userObj = JSON.parse(userStr);
+          const role: string = (userObj?.role ?? '').toLowerCase();
+          setIsAdmin(role === 'admin');
+        } catch {
+          setIsAdmin(false);
+        }
       }
-      try {
-        const userObj = JSON.parse(userStr);
-        setIsAdmin(userObj?.role === 'admin');
-      } catch {
-        setIsAdmin(false);
-      }
-    }
-  }, []);
+    }, [])
+  );
 
   useEffect(() => {
     if (!params.id) {

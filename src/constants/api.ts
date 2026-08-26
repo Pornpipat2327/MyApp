@@ -13,3 +13,7 @@ export const getProductsApiUrl = (): string => {
 export const getUploadApiUrl = (): string => {
   return `${API_BASE_URL}/api/upload`;
 };
+
+export const getLoginApiUrl = (): string => {
+  return `${API_BASE_URL}/api/auth/login`;
+};

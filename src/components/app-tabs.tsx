@@ -49,15 +49,15 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       {/* Hidden screens — not shown in tab bar but registered for navigation */}
-      <NativeTabs.Trigger name="login" style={{ display: 'none' }}>
+      <NativeTabs.Trigger name="login">
         <NativeTabs.Trigger.Label>Login</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="edit" style={{ display: 'none' }}>
+      <NativeTabs.Trigger name="edit">
         <NativeTabs.Trigger.Label>Edit</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="detail" style={{ display: 'none' }}>
+      <NativeTabs.Trigger name="detail">
         <NativeTabs.Trigger.Label>Detail</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>

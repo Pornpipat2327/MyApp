@@ -4,7 +4,8 @@ import { TopHeader } from '@/components/top-header';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -46,24 +47,28 @@ export default function ProductScreen() {
   const [searchQuery, setSearchQuery] = useState(params.category || '');
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        router.replace('/login' as any);
-        return;
+  // Re-check role every time this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'web') {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          router.replace('/login' as any);
+          return;
+        }
+        try {
+          const userObj = JSON.parse(userStr);
+          const role: string = (userObj?.role ?? '').toLowerCase();
+          setIsAdmin(role === 'admin');
+        } catch (e) {
+          setIsAdmin(false);
+        }
       }
-      try {
-        const userObj = JSON.parse(userStr);
-        setIsAdmin(userObj?.role === 'admin');
-      } catch (e) {
-        setIsAdmin(false);
+      if (params.category) {
+        setSearchQuery(params.category);
       }
-    }
-    if (params.category) {
-      setSearchQuery(params.category);
-    }
-  }, [params.category]);
+    }, [params.category])
+  );
 
   const fetchProducts = async () => {
     setLoading(true);

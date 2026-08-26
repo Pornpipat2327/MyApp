@@ -130,7 +130,6 @@ export default function HomeScreen() {
                     <ThemedText type="subtitle" style={styles.statValue}>{totalProducts}</ThemedText>
                 )}
               </ThemedView>
-              {/* Add more stats if needed */}
           </View>
 
           {/* Quick Actions */}
@@ -168,7 +167,11 @@ export default function HomeScreen() {
                   recentProducts.map((p, i) => {
                     const imgSrc = getImageSource(p.image || p.Image || p.image_url);
                     return (
-                      <View key={p.id || p.Product_ID || i}>
+                      <Pressable
+                        key={p.id || p.Product_ID || i}
+                        onPress={() => router.push({ pathname: '/detail' as any, params: { id: String(p.id || p.Product_ID) } })}
+                        style={({ pressed }) => pressed && { opacity: 0.8 }}
+                      >
                         <View style={styles.productRow}>
                           {imgSrc ? (
                             <Image source={imgSrc} style={styles.productThumb} resizeMode="cover" />
@@ -184,7 +187,7 @@ export default function HomeScreen() {
                           <ThemedText type="smallBold" style={styles.productRev}>${Number(p.price || p.Price || 0).toFixed(2)}</ThemedText>
                         </View>
                         {i < recentProducts.length - 1 && <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />}
-                      </View>
+                      </Pressable>
                     );
                   })
               )}
@@ -198,7 +201,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  // ── Layout ──
   root: { flex: 1 },
   safe: { flex: 1 },
   scroll: { flex: 1 },
@@ -214,7 +216,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
   },
 
-  // ── Section Header ──
   sectionHeader: {
     width: '100%',
     maxWidth: MaxContentWidth,

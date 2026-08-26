@@ -233,27 +233,16 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           showsVerticalScrollIndicator={false}
         >
           {/* Page Header */}
-          <View style={styles.pageHeader}>
-            <View style={[styles.headerIconCircle, { backgroundColor: isEditMode ? '#FF9500' : '#007AFF' }]}>
-              <SymbolView
-                tintColor="#ffffff"
-                name={{
-                  ios: isEditMode ? 'pencil.circle.fill' : 'plus.circle.fill',
-                  android: isEditMode ? 'edit' : 'add_circle',
-                  web: isEditMode ? 'edit' : 'add_circle',
-                }}
-                size={28}
-              />
-            </View>
+          <ThemedView type="backgroundElement" style={styles.pageHeader}>
             <ThemedText type="subtitle" style={styles.pageTitle}>
-              {isEditMode ? 'Edit Product' : 'Add Product'}
+              {isEditMode ? 'Edit Product' : 'Add New Product'}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.pageSubtitle}>
               {isEditMode
-                ? 'Update details for this product in your catalog.'
-                : 'Fill in the details below to add a new product to your catalog.'}
+                ? 'Update product details, specifications, and imagery'
+                : 'Fill in the details below to add a keyboard to the catalog'}
             </ThemedText>
-          </View>
+          </ThemedView>
 
           {/* Form Card */}
           <ThemedView type="backgroundElement" style={styles.formCard}>
@@ -263,23 +252,29 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
               <TextInput
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Nova RGB Mechanical"
+                placeholder="e.g., Keychron Q1 Pro Wireless"
                 placeholderTextColor={theme.textSecondary}
-                style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                style={[
+                  styles.input,
+                  { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
+                ] as any}
               />
             </View>
 
             {/* Price & Stock Row */}
             <View style={{ flexDirection: 'row', gap: Spacing.three }}>
               <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <ThemedText type="smallBold" style={styles.label}>Price (THB)</ThemedText>
+                <ThemedText type="smallBold" style={styles.label}>Price (USD) *</ThemedText>
                 <TextInput
                   value={price}
                   onChangeText={setPrice}
-                  placeholder="e.g. 1590.00"
+                  placeholder="e.g., 199.99"
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="decimal-pad"
-                  style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                  style={[
+                    styles.input,
+                    { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
+                  ] as any}
                 />
               </View>
 
@@ -288,10 +283,13 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                 <TextInput
                   value={stock}
                   onChangeText={setStock}
-                  placeholder="e.g. 10"
+                  placeholder="e.g., 10"
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="number-pad"
-                  style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                  style={[
+                    styles.input,
+                    { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
+                  ] as any}
                 />
               </View>
             </View>
@@ -304,7 +302,10 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                 onChangeText={setLocation}
                 placeholder="e.g. Warehouse A / Store Front"
                 placeholderTextColor={theme.textSecondary}
-                style={[styles.input, { color: theme.text, borderColor: theme.backgroundSelected }]}
+                style={[
+                  styles.input,
+                  { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
+                ] as any}
               />
             </View>
 
@@ -349,16 +350,20 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                   onPress={pickImage}
                   style={({ pressed }) => [
                     styles.uploadPlaceholder,
-                    { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundSelected + '40' },
+                    { borderColor: theme.backgroundSelected, backgroundColor: theme.background },
                     pressed && styles.pressed,
                   ]}
                 >
-                  <View style={[styles.uploadIcon, { backgroundColor: '#007AFF18' }]}>
-                    <SymbolView tintColor="#007AFF" name={{ ios: 'photo.badge.plus', android: 'add_photo_alternate', web: 'add_photo_alternate' }} size={28} />
+                  <View style={[styles.uploadIcon, { backgroundColor: '#007AFF15' }]}>
+                    <SymbolView
+                      tintColor="#007AFF"
+                      name={{ ios: 'photo.badge.plus', android: 'add_photo_alternate', web: 'add_photo_alternate' }}
+                      size={28}
+                    />
                   </View>
-                  <ThemedText type="smallBold" style={{ color: '#007AFF', fontSize: 14 }}>เลือกรูปภาพ</ThemedText>
+                  <ThemedText type="smallBold" style={{ color: '#007AFF', fontSize: 14 }}>Select Image</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
-                    Tap to browse your photo library
+                    Tap to upload product photo
                   </ThemedText>
                 </Pressable>
               )}
@@ -368,29 +373,32 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
             <View style={styles.fieldGroup}>
               <ThemedText type="smallBold" style={styles.label}>Category</ThemedText>
               <View style={styles.categoryChips}>
-                {CATEGORIES.map((cat) => (
-                  <Pressable
-                    key={cat}
-                    onPress={() => setSelectedCategory(cat)}
-                    style={({ pressed }) => [
-                      styles.chip,
-                      {
-                        backgroundColor: selectedCategory === cat ? '#007AFF' : theme.backgroundSelected,
-                      },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <ThemedText
-                      type="small"
-                      style={[
-                        styles.chipText,
-                        { color: selectedCategory === cat ? '#ffffff' : theme.text },
+                {CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat;
+                  return (
+                    <Pressable
+                      key={cat}
+                      onPress={() => setSelectedCategory(cat)}
+                      style={({ pressed }) => [
+                        styles.chip,
+                        {
+                          backgroundColor: isSelected ? '#007AFF' : theme.backgroundSelected,
+                        },
+                        pressed && styles.pressed,
                       ]}
                     >
-                      {cat}
-                    </ThemedText>
-                  </Pressable>
-                ))}
+                      <ThemedText
+                        type="small"
+                        style={[
+                          styles.chipText,
+                          { color: isSelected ? '#ffffff' : theme.text },
+                        ]}
+                      >
+                        {cat}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 
@@ -408,8 +416,8 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                 style={[
                   styles.input,
                   styles.textArea,
-                  { color: theme.text, borderColor: theme.backgroundSelected },
-                ]}
+                  { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
+                ] as any}
               />
             </View>
 
@@ -421,7 +429,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                 styles.submitButton,
                 pressed && styles.submitPressed,
                 (loading || uploading) && { opacity: 0.6 },
-              ]}
+              ] as any}
             >
               {loading ? (
                 <ActivityIndicator color="#ffffff" size="small" />
@@ -429,10 +437,10 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                 <>
                   <SymbolView
                     tintColor="#ffffff"
-                    name={{ ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' }}
+                    name={{ ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' } as any}
                     size={18}
                   />
-                  <ThemedText type="smallBold" style={styles.submitText}>
+                  <ThemedText type="smallBold" style={styles.submitText as any}>
                     {isEditMode ? 'Update Product' : 'Add Product'}
                   </ThemedText>
                 </>
@@ -456,22 +464,20 @@ const styles = StyleSheet.create({
   pageHeader: {
     width: '100%',
     maxWidth: MaxContentWidth,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
+    paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.six,
+    borderRadius: Spacing.four,
+    marginTop: Spacing.three,
+    marginBottom: Spacing.four,
     gap: Spacing.two,
+    ...Platform.select({
+      web: {
+        width: `calc(100% - ${Spacing.four * 2}px)` as any,
+      },
+    }),
   },
-  headerIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
-  pageTitle: { fontSize: 28, fontWeight: '800' },
-  pageSubtitle: { textAlign: 'center', maxWidth: 400 },
+  pageTitle: { fontSize: 28, fontWeight: '800', lineHeight: 34 },
+  pageSubtitle: { maxWidth: 500 },
   formCard: {
     width: '100%',
     maxWidth: MaxContentWidth,
@@ -480,7 +486,7 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.four,
     ...Platform.select({
-      web: { width: `calc(100% - ${Spacing.four * 2}px)` },
+      web: { width: `calc(100% - ${Spacing.four * 2}px)` as any },
     }),
   },
   fieldGroup: { gap: Spacing.two },
@@ -491,10 +497,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 4,
     fontSize: 15,
-    ...Platform.select({ web: { outlineStyle: 'none' } }),
+    ...Platform.select({ web: { outlineStyle: 'none' as any } }),
   },
   textArea: { minHeight: 100, paddingTop: Spacing.two + 4 },
-  // ── Image Upload ──
   uploadPlaceholder: {
     borderWidth: 2,
     borderStyle: 'dashed',
@@ -522,7 +527,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(128,128,128,0.08)',
   },
   uploadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -562,4 +567,3 @@ const styles = StyleSheet.create({
   submitPressed: { opacity: 0.85 },
   submitText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
 });
-
