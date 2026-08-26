@@ -249,7 +249,7 @@ export default function ProductDetailScreen() {
 
               {/* Info Card */}
               <ThemedView type="backgroundElement" style={styles.infoCard}>
-                {/* Category & Rating */}
+                {/* Category & Rating row */}
                 <View style={styles.metaRow}>
                   <View style={[styles.categoryBadge, { backgroundColor: 'rgba(0,122,255,0.12)' }]}>
                     <ThemedText type="small" style={styles.categoryBadgeText}>
@@ -279,6 +279,81 @@ export default function ProductDetailScreen() {
                 {/* Divider */}
                 <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
 
+                {/* Specs grid — always show price + category + rating */}
+                <ThemedText type="smallBold" style={styles.sectionLabel}>
+                  Specifications
+                </ThemedText>
+                <View style={styles.specsGrid}>
+                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+                    <SymbolView
+                      tintColor="#007AFF"
+                      name={{ ios: 'tag', android: 'sell', web: 'sell' } as any}
+                      size={20}
+                    />
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Price</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.specValue, { color: '#007AFF' }]}>
+                      {formatPrice(product.price)}
+                    </ThemedText>
+                  </View>
+
+                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+                    <SymbolView
+                      tintColor="#FF9500"
+                      name={{ ios: 'square.grid.2x2', android: 'category', web: 'category' } as any}
+                      size={20}
+                    />
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Category</ThemedText>
+                    <ThemedText type="smallBold" style={styles.specValue} numberOfLines={1}>
+                      {product.category || 'General'}
+                    </ThemedText>
+                  </View>
+
+                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+                    <SymbolView
+                      tintColor="#FFB300"
+                      name={{ ios: 'star.fill', android: 'star', web: 'star' } as any}
+                      size={20}
+                    />
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Rating</ThemedText>
+                    <ThemedText type="smallBold" style={[styles.specValue, { color: '#FFB300' }]}>
+                      {product.rating ?? '4.5'} / 5
+                    </ThemedText>
+                  </View>
+
+                  {/* Stock — only if API returns it */}
+                  {product.stock !== undefined && product.stock !== null && (
+                    <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+                      <SymbolView
+                        tintColor="#30D158"
+                        name={{ ios: 'shippingbox', android: 'inventory', web: 'inventory' } as any}
+                        size={20}
+                      />
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Stock</ThemedText>
+                      <ThemedText type="smallBold" style={[styles.specValue, { color: '#30D158' }]}>
+                        {String(product.stock)} units
+                      </ThemedText>
+                    </View>
+                  )}
+
+                  {/* Location — only if API returns it */}
+                  {!!product.location_text && (
+                    <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+                      <SymbolView
+                        tintColor="#AF52DE"
+                        name={{ ios: 'mappin.circle', android: 'location_on', web: 'location_on' } as any}
+                        size={20}
+                      />
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Location</ThemedText>
+                      <ThemedText type="smallBold" style={styles.specValue} numberOfLines={2}>
+                        {product.location_text}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+
+                {/* Divider */}
+                <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
+
                 {/* Description */}
                 <ThemedText type="smallBold" style={styles.sectionLabel}>
                   Description
@@ -286,45 +361,6 @@ export default function ProductDetailScreen() {
                 <ThemedText type="small" themeColor="textSecondary" style={styles.descriptionText}>
                   {product.description || 'No description available for this product.'}
                 </ThemedText>
-
-                {/* Stock & Location */}
-                {(product.stock !== undefined || product.location_text) && (
-                  <>
-                    <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-                    <View style={styles.infoGrid}>
-                      {product.stock !== undefined && (
-                        <View style={[styles.infoGridItem, { backgroundColor: theme.background }]}>
-                          <SymbolView
-                            tintColor={theme.textSecondary}
-                            name={{ ios: 'shippingbox', android: 'inventory', web: 'inventory' } as any}
-                            size={22}
-                          />
-                          <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 4 }}>
-                            Stock
-                          </ThemedText>
-                          <ThemedText type="smallBold" style={{ fontSize: 18 }}>
-                            {String(product.stock)}
-                          </ThemedText>
-                        </View>
-                      )}
-                      {!!product.location_text && (
-                        <View style={[styles.infoGridItem, { backgroundColor: theme.background }]}>
-                          <SymbolView
-                            tintColor={theme.textSecondary}
-                            name={{ ios: 'mappin.circle', android: 'location_on', web: 'location_on' } as any}
-                            size={22}
-                          />
-                          <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 4 }}>
-                            Location
-                          </ThemedText>
-                          <ThemedText type="smallBold" style={{ fontSize: 14 }}>
-                            {product.location_text}
-                          </ThemedText>
-                        </View>
-                      )}
-                    </View>
-                  </>
-                )}
 
                 {/* Admin Buttons */}
                 {isAdmin && (
@@ -385,6 +421,7 @@ export default function ProductDetailScreen() {
     </ThemedView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -513,6 +550,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+
+  specsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  specItem: {
+    width: '47%',
+    ...Platform.select({ web: { width: `calc(50% - ${Spacing.one}px)` as any } }),
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+    gap: 4,
+  },
+  specLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  specValue: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
 
   adminButtons: {
     flexDirection: 'row',
