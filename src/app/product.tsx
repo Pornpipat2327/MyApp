@@ -47,7 +47,7 @@ export default function ProductScreen() {
   const [searchQuery, setSearchQuery] = useState(params.category || '');
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Re-check role every time this screen comes into focus
+  // Re-check role and refetch products every time this screen comes into focus
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS === 'web') {
@@ -67,6 +67,7 @@ export default function ProductScreen() {
       if (params.category) {
         setSearchQuery(params.category);
       }
+      fetchProducts();
     }, [params.category])
   );
 
