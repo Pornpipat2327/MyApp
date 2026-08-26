@@ -293,7 +293,7 @@ export default function ProductScreen() {
                       params: { id: String(product.id) },
                     })
                   }
-                  style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [styles.cardPressable, { opacity: pressed ? 0.85 : 1 }]}
                 >
                   <ThemedView type="backgroundElement" style={styles.card}>
                     {getImageSource(product.image) ? (
@@ -317,13 +317,16 @@ export default function ProductScreen() {
                         </ThemedText>
                       </View>
 
-                      <ThemedText type="smallBold" style={styles.productName}>
+                      <ThemedText type="smallBold" style={styles.productName} numberOfLines={2}>
                         {product.name}
                       </ThemedText>
 
                       <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
                         {product.description || 'No description available.'}
                       </ThemedText>
+
+                      {/* Spacer pushes price row to bottom */}
+                      <View style={{ flex: 1 }} />
 
                       <View style={styles.priceRow}>
                         <ThemedText type="default" style={styles.priceText}>
@@ -441,15 +444,12 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    alignItems: 'stretch',
     paddingHorizontal: Spacing.four,
     gap: Spacing.three,
   },
-  card: {
+  cardPressable: {
     width: '100%',
-    borderRadius: Spacing.four,
-    overflow: 'hidden',
-    marginBottom: Spacing.three,
     ...Platform.select({
       web: {
         width: `calc(33.33% - ${(Spacing.three * 2) / 3}px)` as any,
@@ -457,12 +457,19 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  card: {
+    flex: 1,
+    borderRadius: Spacing.four,
+    overflow: 'hidden',
+    marginBottom: Spacing.three,
+  },
   productImage: {
     width: '100%',
     height: 200,
     backgroundColor: 'rgba(128,128,128,0.05)',
   },
   cardContent: {
+    flex: 1,
     padding: Spacing.three,
     gap: Spacing.two,
   },
