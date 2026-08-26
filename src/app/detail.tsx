@@ -41,9 +41,10 @@ export default function ProductDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Re-check role every time this screen is focused
+  // Re-check role AND re-fetch product every time this screen is focused
   useFocusEffect(
     useCallback(() => {
+      // 1. Auth check
       if (Platform.OS === 'web') {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
@@ -58,45 +59,47 @@ export default function ProductDetailScreen() {
           setIsAdmin(false);
         }
       }
-    }, [])
+
+      // 2. Fetch fresh product data
+      if (!params.id) {
+        setError('No product ID provided.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      fetch(`${getProductsApiUrl()}/${params.id}`)
+        .then((res) => res.json())
+        .then((resData) => {
+          const d = resData?.data ?? resData;
+          if (!d || (!d.id && !d.Product_ID && !d.name && !d.Name)) {
+            throw new Error('Product not found');
+          }
+          setProduct({
+            id: d.Product_ID ?? d.id ?? params.id!,
+            name: d.Name ?? d.name ?? '',
+            category: d.Category ?? d.category ?? 'General',
+            price: d.Price ?? d.price ?? 0,
+            rating: d.Rating ?? d.rating ?? 4.5,
+            description: d.Description ?? d.description ?? '',
+            image: d.image ?? d.Image ?? d.image_url ?? '',
+            stock: d.Stock ?? d.stock ?? 0,
+            location_text: d.Location ?? d.location ?? d.location_text ?? '',
+          });
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : 'Failed to load product');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }, [params.id])
   );
 
-  useEffect(() => {
-    if (!params.id) {
-      setError('No product ID provided.');
-      setLoading(false);
-      return;
-    }
+  // (Removed separate useEffect for fetch — now handled in useFocusEffect above)
 
-    setLoading(true);
-    setError(null);
-
-    fetch(`${getProductsApiUrl()}/${params.id}`)
-      .then((res) => res.json())
-      .then((resData) => {
-        const d = resData?.data ?? resData;
-        if (!d || (!d.id && !d.Product_ID && !d.name && !d.Name)) {
-          throw new Error('Product not found');
-        }
-        setProduct({
-          id: d.Product_ID ?? d.id ?? params.id!,
-          name: d.Name ?? d.name ?? '',
-          category: d.Category ?? d.category ?? 'General',
-          price: d.Price ?? d.price ?? 0,
-          rating: d.Rating ?? d.rating ?? 4.5,
-          description: d.Description ?? d.description ?? '',
-          image: d.image ?? d.Image ?? d.image_url ?? '',
-          stock: d.Stock ?? d.stock ?? 0,
-          location_text: d.Location ?? d.location ?? d.location_text ?? '',
-        });
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Failed to load product');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [params.id]);
 
   const handleDelete = async () => {
     if (!product) return;
