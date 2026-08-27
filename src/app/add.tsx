@@ -157,6 +157,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         category: selectedCategory || '',
+        location: location.trim() || 'Store Front',
         location_text: location.trim() || 'Store Front',
         badge_status: product?.badge_status || 'Active',
         image_url: imageUrl || null,

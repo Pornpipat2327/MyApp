@@ -8,7 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { Image, Platform, Pressable, ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getProductsApiUrl } from '@/constants/api';
+import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 
 const QUICK_ACTIONS = [
   { id: 'qa1', label: 'Add Product', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as const, color: '#007AFF', route: '/add' as const },
@@ -70,8 +70,13 @@ export default function HomeScreen() {
   const recentProducts = [...products].reverse().slice(0, 5);
 
   const getImageSource = (imagePath?: string) => {
-    if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:'))) {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
       return { uri: imagePath };
+    }
+    // รองรับ /uploads/ path จาก server
+    if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/')) {
+      return { uri: `${getBaseUrl()}${imagePath}` };
     }
     return null;
   };

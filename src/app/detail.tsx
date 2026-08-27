@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { getProductsApiUrl } from '@/constants/api';
+import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
@@ -146,13 +146,17 @@ export default function ProductDetailScreen() {
   };
 
   const getImageSource = (imagePath?: string) => {
+    if (!imagePath) return null;
     if (
-      imagePath &&
-      (imagePath.startsWith('http://') ||
-        imagePath.startsWith('https://') ||
-        imagePath.startsWith('data:'))
+      imagePath.startsWith('http://') ||
+      imagePath.startsWith('https://') ||
+      imagePath.startsWith('data:')
     ) {
       return { uri: imagePath };
+    }
+    // รองรับ /uploads/ path จาก server
+    if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/')) {
+      return { uri: `${getBaseUrl()}${imagePath}` };
     }
     return null;
   };
@@ -344,7 +348,7 @@ export default function ProductDetailScreen() {
                     />
                     <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Location</ThemedText>
                     <ThemedText type="smallBold" style={[styles.specValue, { color: '#AF52DE' }]} numberOfLines={2}>
-                      {product.location_text || 'Store Front'}
+                      {product.location_text && product.location_text.trim() !== '' ? product.location_text : 'Not Specified'}
                     </ThemedText>
                   </View>
                 </View>

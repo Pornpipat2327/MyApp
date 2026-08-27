@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getProductsApiUrl } from '@/constants/api';
+import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 
@@ -154,8 +154,13 @@ export default function ProductScreen() {
   };
 
   const getImageSource = (imagePath?: string) => {
-    if (imagePath && (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:'))) {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
       return { uri: imagePath };
+    }
+    // รองรับ /uploads/ path จาก server
+    if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/')) {
+      return { uri: `${getBaseUrl()}${imagePath}` };
     }
     return null;
   };

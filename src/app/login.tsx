@@ -16,7 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { getLoginApiUrl } from '@/constants/api';
+import { getLoginApiUrl, getBaseUrl } from '@/constants/api';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -103,15 +103,28 @@ export default function LoginScreen() {
     setSuccessMsg(null);
 
     try {
-      // Mock registration or standard flow
-      setTimeout(() => {
+      const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setSuccessMsg('Account created! Please sign in with your credentials.');
         setMode('login');
         setPassword('');
-        setLoading(false);
-      }, 600);
-    } catch (err) {
-      setErrorMsg('Failed to create account.');
+      } else {
+        setErrorMsg(data.message || 'Registration failed. Username may already exist.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg('Cannot connect to server. Please check your connection.');
+    } finally {
       setLoading(false);
     }
   };
