@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useCart } from '@/hooks/use-cart';
 import { SymbolView } from 'expo-symbols';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -35,11 +36,14 @@ export default function ProductDetailScreen() {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
+  const { addToCart } = useCart();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [addedSuccess, setAddedSuccess] = useState(false);
 
   // Re-check role AND re-fetch product every time this screen is focused
   useFocusEffect(
@@ -166,6 +170,25 @@ export default function ProductDetailScreen() {
     const full = Math.floor(r);
     const empty = 5 - full;
     return '★'.repeat(full) + '☆'.repeat(empty);
+  };
+
+  const rawStock = product?.stock;
+  const maxStock = typeof rawStock === 'number' ? rawStock : parseInt(String(rawStock ?? 99), 10) || 99;
+  const isOutOfStock = product?.stock !== undefined && product?.stock !== null && maxStock <= 0;
+
+  const handleAddToCart = () => {
+    if (!product || isOutOfStock) return;
+    addToCart(product, quantity);
+    setAddedSuccess(true);
+    setTimeout(() => {
+      setAddedSuccess(false);
+    }, 2000);
+  };
+
+  const handleBuyNow = () => {
+    if (!product || isOutOfStock) return;
+    addToCart(product, quantity);
+    router.push('/checkout' as any);
   };
 
   return (
@@ -363,6 +386,75 @@ export default function ProductDetailScreen() {
                 <ThemedText type="small" themeColor="textSecondary" style={styles.descriptionText}>
                   {product.description || 'No description available for this product.'}
                 </ThemedText>
+
+                {/* Customer Shopping Actions (Quantity Selector & Add to Cart) */}
+                <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
+                
+                <View style={styles.purchaseSection}>
+                  <View style={styles.quantityRow}>
+                    <ThemedText type="smallBold">Quantity:</ThemedText>
+                    <View style={[styles.quantityStepper, { backgroundColor: theme.background }]}>
+                      <Pressable
+                        onPress={() => setQuantity((q) => Math.max(1, q - 1))}
+                        disabled={quantity <= 1 || isOutOfStock}
+                        style={({ pressed }) => [styles.stepBtn, (pressed || quantity <= 1) && styles.stepBtnDisabled]}
+                      >
+                        <ThemedText style={[styles.stepBtnText, { color: theme.text }]}>−</ThemedText>
+                      </Pressable>
+                      <ThemedText style={[styles.quantityValue, { color: theme.text }]}>{quantity}</ThemedText>
+                      <Pressable
+                        onPress={() => setQuantity((q) => Math.min(maxStock, q + 1))}
+                        disabled={quantity >= maxStock || isOutOfStock}
+                        style={({ pressed }) => [styles.stepBtn, (pressed || quantity >= maxStock) && styles.stepBtnDisabled]}
+                      >
+                        <ThemedText style={[styles.stepBtnText, { color: theme.text }]}>+</ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <View style={styles.purchaseButtonsRow}>
+                    {/* Add to Cart Button */}
+                    <Pressable
+                      onPress={handleAddToCart}
+                      disabled={isOutOfStock}
+                      style={({ pressed }) => [
+                        styles.addToCartBtn,
+                        { backgroundColor: addedSuccess ? '#34C759' : theme.text },
+                        (pressed || isOutOfStock) && styles.pressed,
+                        isOutOfStock && styles.btnDisabled,
+                      ]}
+                    >
+                      <SymbolView
+                        tintColor={theme.background}
+                        name={{ ios: addedSuccess ? 'checkmark.circle.fill' : 'cart.badge.plus', android: 'add_shopping_cart', web: 'add_shopping_cart' } as any}
+                        size={18}
+                      />
+                      <ThemedText type="smallBold" style={[styles.addToCartText, { color: theme.background }]}>
+                        {isOutOfStock ? 'Out of Stock' : addedSuccess ? 'Added to Cart! ✓' : 'Add to Cart'}
+                      </ThemedText>
+                    </Pressable>
+
+                    {/* Buy Now Button */}
+                    {!isOutOfStock && (
+                      <Pressable
+                        onPress={handleBuyNow}
+                        style={({ pressed }) => [
+                          styles.buyNowBtn,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <SymbolView
+                          tintColor="#ffffff"
+                          name={{ ios: 'bolt.fill', android: 'flash_on', web: 'flash_on' } as any}
+                          size={18}
+                        />
+                        <ThemedText type="smallBold" style={styles.buyNowText}>
+                          Buy Now
+                        </ThemedText>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
 
                 {/* Admin Buttons */}
                 {isAdmin && (
@@ -593,6 +685,82 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  purchaseSection: {
+    gap: Spacing.three,
+    marginTop: Spacing.one,
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  quantityStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Spacing.two,
+    borderWidth: 1,
+    borderColor: 'rgba(128,128,128,0.2)',
+    overflow: 'hidden',
+  },
+  stepBtn: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 36,
+  },
+  stepBtnDisabled: {
+    opacity: 0.3,
+  },
+  stepBtnText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  quantityValue: {
+    paddingHorizontal: Spacing.three,
+    fontSize: 15,
+    fontWeight: '700',
+    minWidth: 32,
+    textAlign: 'center',
+  },
+  purchaseButtonsRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  addToCartBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.three,
+  },
+  addToCartText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  buyNowBtn: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Spacing.three,
+  },
+  buyNowText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  btnDisabled: {
+    opacity: 0.5,
   },
 
   pressed: { opacity: 0.75 },

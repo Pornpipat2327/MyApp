@@ -89,6 +89,18 @@ export default function AppTabs() {
         </NativeTabs.Trigger>
       )}
 
+      <NativeTabs.Trigger name="cart">
+        <NativeTabs.Trigger.Label>Cart</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="checkout">
+        <NativeTabs.Trigger.Label>Checkout</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="orders">
+        <NativeTabs.Trigger.Label>Orders</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="login">
         <NativeTabs.Trigger.Label>Login</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>

@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
+import { useCart } from '@/hooks/use-cart';
 
 interface Product {
   id: string | number;
@@ -34,14 +34,13 @@ interface Product {
   location?: string;
 }
 
-
-
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
 export default function ProductScreen() {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string }>();
+  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -373,45 +372,69 @@ export default function ProductScreen() {
                         <ThemedText type="default" style={styles.priceText}>
                           {formatPrice(product.price)}
                         </ThemedText>
-                        {isAdmin && (
-                          <View style={{ flexDirection: 'row', gap: 6 }}>
-                            <Pressable
-                              onPress={(e) => {
-                                e.stopPropagation?.();
-                                router.push({
-                                  pathname: '/edit' as any,
-                                  params: {
-                                    id: String(product.id),
-                                  },
-                                });
-                              }}
-                              style={({ pressed }) => [
-                                styles.buyButton,
-                                { backgroundColor: '#FF9500' },
-                                pressed && styles.pressed,
-                              ]}
-                            >
-                              <ThemedText type="smallBold" style={styles.buyButtonText}>
-                                Edit
-                              </ThemedText>
-                            </Pressable>
-                            <Pressable
-                              onPress={(e) => {
-                                e.stopPropagation?.();
-                                handleDeleteProduct(product.id, product.name);
-                              }}
-                              style={({ pressed }) => [
-                                styles.buyButton,
-                                { backgroundColor: '#FF3B30' },
-                                pressed && styles.pressed,
-                              ]}
-                            >
-                              <ThemedText type="smallBold" style={styles.buyButtonText}>
-                                Delete
-                              </ThemedText>
-                            </Pressable>
-                          </View>
-                        )}
+                        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                          {/* Quick Add to Cart Button */}
+                          <Pressable
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              addToCart(product, 1);
+                            }}
+                            style={({ pressed }) => [
+                              styles.buyButton,
+                              { backgroundColor: '#007AFF', paddingHorizontal: Spacing.two },
+                              pressed && styles.pressed,
+                            ]}
+                          >
+                            <SymbolView
+                              tintColor="#ffffff"
+                              name={{ ios: 'cart.badge.plus', android: 'add_shopping_cart', web: 'add_shopping_cart' } as any}
+                              size={15}
+                            />
+                            <ThemedText type="smallBold" style={styles.buyButtonText}>
+                              +Cart
+                            </ThemedText>
+                          </Pressable>
+
+                          {isAdmin && (
+                            <>
+                              <Pressable
+                                onPress={(e) => {
+                                  e.stopPropagation?.();
+                                  router.push({
+                                    pathname: '/edit' as any,
+                                    params: {
+                                      id: String(product.id),
+                                    },
+                                  });
+                                }}
+                                style={({ pressed }) => [
+                                  styles.buyButton,
+                                  { backgroundColor: '#FF9500' },
+                                  pressed && styles.pressed,
+                                ]}
+                              >
+                                <ThemedText type="smallBold" style={styles.buyButtonText}>
+                                  Edit
+                                </ThemedText>
+                              </Pressable>
+                              <Pressable
+                                onPress={(e) => {
+                                  e.stopPropagation?.();
+                                  handleDeleteProduct(product.id, product.name);
+                                }}
+                                style={({ pressed }) => [
+                                  styles.buyButton,
+                                  { backgroundColor: '#FF3B30' },
+                                  pressed && styles.pressed,
+                                ]}
+                              >
+                                <ThemedText type="smallBold" style={styles.buyButtonText}>
+                                  Delete
+                                </ThemedText>
+                              </Pressable>
+                            </>
+                          )}
+                        </View>
                       </View>
                     </View>
                   </ThemedView>

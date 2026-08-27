@@ -13,7 +13,9 @@ import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 const QUICK_ACTIONS = [
   { id: 'qa1', label: 'Add Product', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as const, color: '#007AFF', route: '/add' as const },
   { id: 'qa2', label: 'View Products', icon: { ios: 'list.bullet.rectangle.fill', android: 'inventory_2', web: 'inventory_2' } as const, color: '#30D158', route: '/product' as const },
-  { id: 'qa4', label: 'Categories', icon: { ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' } as const, color: '#FF453A', route: '/categories' as const },
+  { id: 'qa3', label: 'My Cart', icon: { ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' } as const, color: '#FF9500', route: '/cart' as const },
+  { id: 'qa4', label: 'Orders', icon: { ios: 'doc.plaintext.fill', android: 'receipt_long', web: 'receipt_long' } as const, color: '#AF52DE', route: '/orders' as const },
+  { id: 'qa5', label: 'Categories', icon: { ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' } as const, color: '#FF453A', route: '/categories' as const },
 ];
 
 function SectionHeader({ title, actionText, onPress }: { title: string; actionText?: string; onPress?: () => void }) {

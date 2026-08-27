@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useCart } from '@/hooks/use-cart';
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
@@ -15,6 +16,7 @@ interface TopHeaderProps {
 export function TopHeader({ searchQuery = '', onSearchChange }: TopHeaderProps) {
   const theme = useTheme();
   const router = useRouter();
+  const { totalItems } = useCart();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -65,21 +67,39 @@ export function TopHeader({ searchQuery = '', onSearchChange }: TopHeaderProps) 
 
         {/* Icons Area */}
         <View style={styles.iconsContainer}>
+          {/* Cart Icon */}
           <Pressable
-            onPress={() => router.push('/product')}
+            onPress={() => router.push('/cart' as any)}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
           >
             <SymbolView
               tintColor={theme.text}
-              name={{ ios: 'bag', android: 'shopping_cart', web: 'shopping_cart' } as any}
+              name={{ ios: 'cart', android: 'shopping_cart', web: 'shopping_cart' } as any}
               size={20}
             />
-            {/* Cart Item Count Badge */}
-            <View style={styles.badge}>
-              <ThemedText style={styles.badgeText}>3</ThemedText>
-            </View>
+            {/* Dynamic Cart Item Count Badge */}
+            {totalItems > 0 && (
+              <View style={styles.badge}>
+                <ThemedText style={styles.badgeText}>
+                  {totalItems > 99 ? '99+' : totalItems}
+                </ThemedText>
+              </View>
+            )}
           </Pressable>
 
+          {/* Orders Icon */}
+          <Pressable
+            onPress={() => router.push('/orders' as any)}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          >
+            <SymbolView
+              tintColor={theme.text}
+              name={{ ios: 'doc.plaintext', android: 'receipt_long', web: 'receipt_long' } as any}
+              size={20}
+            />
+          </Pressable>
+
+          {/* Profile / Account Icon */}
           <Pressable
             onPress={() => router.push('/login' as any)}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}

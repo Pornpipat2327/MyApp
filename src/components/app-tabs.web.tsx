@@ -72,6 +72,9 @@ export default function AppTabs() {
             <TabButton iconName="category">Categories</TabButton>
           </TabTrigger>
           {/* Hidden screens — registered for navigation but not shown in tab bar */}
+          <TabTrigger name="cart" href="/cart" style={{ display: 'none' }} />
+          <TabTrigger name="checkout" href="/checkout" style={{ display: 'none' }} />
+          <TabTrigger name="orders" href="/orders" style={{ display: 'none' }} />
           <TabTrigger name="login" href="/login" style={{ display: 'none' }} />
           <TabTrigger name="edit" href="/edit" style={{ display: 'none' }} />
           <TabTrigger name="detail" href="/detail" style={{ display: 'none' }} />
