@@ -30,6 +30,8 @@ interface Product {
   rating?: string | number;
   description?: string;
   image?: string;
+  stock?: number;
+  location?: string;
 }
 
 
@@ -89,6 +91,8 @@ export default function ProductScreen() {
         rating: d.rating ?? d.Rating ?? 4.5,
         description: d.description ?? d.Description ?? '',
         image: d.image ?? d.Image ?? d.image_url ?? '',
+        stock: d.stock !== undefined ? Number(d.stock) : (d.Stock !== undefined ? Number(d.Stock) : 0),
+        location: d.location ?? d.Location ?? '',
       }));
       setProducts(items);
     } catch (err) {
