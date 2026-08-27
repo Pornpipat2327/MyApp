@@ -18,9 +18,22 @@ export function TopHeader({ searchQuery = '', onSearchChange }: TopHeaderProps) 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const user = localStorage.getItem('user');
-      setIsLoggedIn(!!user);
+    const checkAuth = () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const user = localStorage.getItem('user');
+        setIsLoggedIn(!!user);
+      }
+    };
+
+    checkAuth();
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('storage', checkAuth);
+      window.addEventListener('auth-change', checkAuth);
+      return () => {
+        window.removeEventListener('storage', checkAuth);
+        window.removeEventListener('auth-change', checkAuth);
+      };
     }
   }, []);
 

@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from 'react';
+import { usePathname } from 'expo-router';
 import {
   TabList,
   TabListProps,
@@ -7,7 +9,7 @@ import {
   TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -15,6 +17,39 @@ import { ThemedView } from './themed-view';
 import { Colors, Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const checkRole = () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const userObj = JSON.parse(userStr);
+            const role = (userObj?.role ?? '').toLowerCase();
+            setIsAdmin(role === 'admin');
+            return;
+          } catch (e) {
+            // ignore parse error
+          }
+        }
+        setIsAdmin(false);
+      }
+    };
+
+    checkRole();
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('storage', checkRole);
+      window.addEventListener('auth-change', checkRole);
+      return () => {
+        window.removeEventListener('storage', checkRole);
+        window.removeEventListener('auth-change', checkRole);
+      };
+    }
+  }, [pathname]);
+
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
@@ -26,9 +61,13 @@ export default function AppTabs() {
           <TabTrigger name="product" href="/product" asChild>
             <TabButton iconName="shopping_bag">Product</TabButton>
           </TabTrigger>
-          <TabTrigger name="add" href="/add" asChild>
-            <TabButton iconName="edit_note">Add</TabButton>
-          </TabTrigger>
+          {isAdmin ? (
+            <TabTrigger name="add" href="/add" asChild>
+              <TabButton iconName="edit_note">Add</TabButton>
+            </TabTrigger>
+          ) : (
+            <TabTrigger name="add" href="/add" style={{ display: 'none' }} />
+          )}
           <TabTrigger name="categories" href="/categories" asChild>
             <TabButton iconName="category">Categories</TabButton>
           </TabTrigger>

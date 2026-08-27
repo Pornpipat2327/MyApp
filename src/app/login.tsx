@@ -77,6 +77,7 @@ export default function LoginScreen() {
           if (data.token) {
             localStorage.setItem('token', data.token);
           }
+          window.dispatchEvent(new Event('auth-change'));
         }
 
         setUser(userData);
@@ -133,6 +134,7 @@ export default function LoginScreen() {
     if (Platform.OS === 'web') {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      window.dispatchEvent(new Event('auth-change'));
     }
     setUser(null);
     setUsername('');
@@ -304,28 +306,47 @@ export default function LoginScreen() {
                   )}
                 </Pressable>
 
-                {/* Quick Test Fill for Admin */}
+                {/* Quick Test Fill for Admin and User */}
                 {mode === 'login' && (
                   <View style={styles.quickFillContainer as any}>
                     <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.two }}>
-                      💡 Quick Test Login Credentials:
+                      💡 Quick Test Login Credentials (เลือกทดสอบสิทธิ์):
                     </ThemedText>
-                    <Pressable
-                      onPress={() => {
-                        setUsername('admin');
-                        setPassword('adminpassword');
-                        setErrorMsg(null);
-                      }}
-                      style={({ pressed }) => [
-                        styles.quickFillButton,
-                        { backgroundColor: theme.background },
-                        pressed && styles.pressed,
-                      ] as any}
-                    >
-                      <ThemedText type="smallBold" style={{ color: '#007AFF', textAlign: 'center' }}>
-                        🔑 Fill Default Admin (admin / adminpassword)
-                      </ThemedText>
-                    </Pressable>
+                    <View style={{ gap: Spacing.two }}>
+                      <Pressable
+                        onPress={() => {
+                          setUsername('admin');
+                          setPassword('adminpassword');
+                          setErrorMsg(null);
+                        }}
+                        style={({ pressed }) => [
+                          styles.quickFillButton,
+                          { backgroundColor: theme.background, borderColor: '#007AFF' },
+                          pressed && styles.pressed,
+                        ] as any}
+                      >
+                        <ThemedText type="smallBold" style={{ color: '#007AFF', textAlign: 'center' }}>
+                          👑 Admin Account (admin / adminpassword) — แสดงปุ่ม Add
+                        </ThemedText>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => {
+                          setUsername('user');
+                          setPassword('userpassword');
+                          setErrorMsg(null);
+                        }}
+                        style={({ pressed }) => [
+                          styles.quickFillButton,
+                          { backgroundColor: theme.background, borderColor: '#34C759' },
+                          pressed && styles.pressed,
+                        ] as any}
+                      >
+                        <ThemedText type="smallBold" style={{ color: '#34C759', textAlign: 'center' }}>
+                          👤 User Account (user / userpassword) — ซ่อนปุ่ม Add
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                   </View>
                 )}
               </>

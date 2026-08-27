@@ -63,6 +63,21 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
       const user = localStorage.getItem('user');
       if (!user) {
         router.replace('/login' as any);
+        return;
+      }
+      try {
+        const userObj = JSON.parse(user);
+        const role = (userObj?.role ?? '').toLowerCase();
+        if (role !== 'admin') {
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.alert('Access Denied: Only administrators can add products.');
+          } else {
+            Alert.alert('Access Denied', 'Only administrators can add products.');
+          }
+          router.replace('/' as any);
+        }
+      } catch (e) {
+        router.replace('/login' as any);
       }
     }
   }, []);

@@ -38,20 +38,29 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let savedUser = null;
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      savedUser = localStorage.getItem('user');
-    }
-    if (!savedUser) {
-      router.replace('/login' as any);
-    } else {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-        setIsAdmin(parsedUser?.role === 'admin');
-      } catch (e) {
-        router.replace('/login' as any);
+    const checkUser = () => {
+      let savedUser = null;
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        savedUser = localStorage.getItem('user');
       }
+      if (!savedUser) {
+        router.replace('/login' as any);
+      } else {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setIsAdmin(parsedUser?.role === 'admin');
+        } catch (e) {
+          router.replace('/login' as any);
+        }
+      }
+    };
+
+    checkUser();
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('storage', checkUser);
+      window.addEventListener('auth-change', checkUser);
     }
     
     // Fetch API Data
@@ -63,6 +72,13 @@ export default function HomeScreen() {
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
+
+    return () => {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('storage', checkUser);
+        window.removeEventListener('auth-change', checkUser);
+      }
+    };
   }, []);
 
   const totalProducts = products.length;

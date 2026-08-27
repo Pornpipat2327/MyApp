@@ -49,6 +49,32 @@ export default function ProductScreen() {
   const [searchQuery, setSearchQuery] = useState(params.category || '');
   const [isAdmin, setIsAdmin] = useState(false);
 
+  useEffect(() => {
+    const checkRole = () => {
+      if (Platform.OS === 'web') {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const userObj = JSON.parse(userStr);
+            const role: string = (userObj?.role ?? '').toLowerCase();
+            setIsAdmin(role === 'admin');
+            return;
+          } catch (e) {}
+        }
+        setIsAdmin(false);
+      }
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('storage', checkRole);
+      window.addEventListener('auth-change', checkRole);
+      return () => {
+        window.removeEventListener('storage', checkRole);
+        window.removeEventListener('auth-change', checkRole);
+      };
+    }
+  }, []);
+
   // Re-check role and refetch products every time this screen comes into focus
   useFocusEffect(
     useCallback(() => {
