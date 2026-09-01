@@ -8,7 +8,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
   Pressable,
@@ -20,7 +19,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCart } from '@/hooks/use-cart';
 
 interface Product {
   id: string | number;
@@ -40,41 +38,13 @@ export default function ProductScreen() {
   const theme = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string }>();
-  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>('default');
   const [searchQuery, setSearchQuery] = useState(params.category || '');
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const checkRole = () => {
-      if (Platform.OS === 'web') {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          try {
-            const userObj = JSON.parse(userStr);
-            const role: string = (userObj?.role ?? '').toLowerCase();
-            setIsAdmin(role === 'admin');
-            return;
-          } catch (e) {}
-        }
-        setIsAdmin(false);
-      }
-    };
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.addEventListener('storage', checkRole);
-      window.addEventListener('auth-change', checkRole);
-      return () => {
-        window.removeEventListener('storage', checkRole);
-        window.removeEventListener('auth-change', checkRole);
-      };
-    }
-  }, []);
-
-  // Re-check role and refetch products every time this screen comes into focus
+  // Auth check and refetch products every time this screen comes into focus
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS === 'web') {
@@ -82,13 +52,6 @@ export default function ProductScreen() {
         if (!userStr) {
           router.replace('/login' as any);
           return;
-        }
-        try {
-          const userObj = JSON.parse(userStr);
-          const role: string = (userObj?.role ?? '').toLowerCase();
-          setIsAdmin(role === 'admin');
-        } catch (e) {
-          setIsAdmin(false);
         }
       }
       if (params.category) {
@@ -130,53 +93,6 @@ export default function ProductScreen() {
   useEffect(() => {
     fetchProducts();
   }, []);
-
-  const confirmAndDelete = async (productId: string | number, productName: string) => {
-    try {
-      const response = await fetch(`${getProductsApiUrl()}/${productId}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        if (Platform.OS === 'web') {
-          window.alert(`Successfully deleted "${productName}"`);
-        } else {
-          Alert.alert('Deleted', `Successfully deleted "${productName}"`);
-        }
-        fetchProducts();
-      } else {
-        const msg = data.message || 'Failed to delete product';
-        if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Error', msg);
-      }
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Network error while deleting';
-      if (Platform.OS === 'web') window.alert(errMsg);
-      else Alert.alert('Error', errMsg);
-    }
-  };
-
-  const handleDeleteProduct = (productId: string | number, productName: string) => {
-    if (Platform.OS === 'web') {
-      const confirmDelete = window.confirm(`Are you sure you want to delete "${productName}"?`);
-      if (confirmDelete) {
-        confirmAndDelete(productId, productName);
-      }
-    } else {
-      Alert.alert(
-        'Confirm Delete',
-        `Are you sure you want to delete "${productName}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: () => confirmAndDelete(productId, productName),
-          },
-        ]
-      );
-    }
-  };
 
   const getImageSource = (imagePath?: string) => {
     if (!imagePath) return null;
@@ -305,7 +221,7 @@ export default function ProductScreen() {
                 onPress={fetchProducts}
                 style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
               >
-                <ThemedText type="smallBold" style={styles.buyButtonText}>
+                <ThemedText type="smallBold" style={styles.retryButtonText}>
                   Retry
                 </ThemedText>
               </Pressable>
@@ -333,7 +249,7 @@ export default function ProductScreen() {
                       params: { id: String(product.id) },
                     })
                   }
-                  style={({ pressed }) => [styles.cardPressable, { opacity: pressed ? 0.85 : 1 }]}
+                  style={({ pressed }) => [styles.cardPressable, { opacity: pressed ? 0.88 : 1 }]}
                 >
                   <ThemedView type="backgroundElement" style={styles.card}>
                     {getImageSource(product.image) ? (
@@ -361,80 +277,10 @@ export default function ProductScreen() {
                         {product.name}
                       </ThemedText>
 
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.productDescription} numberOfLines={2}>
-                        {product.description || 'No description available.'}
-                      </ThemedText>
-
-                      {/* Spacer pushes price row to bottom */}
-                      <View style={{ flex: 1 }} />
-
                       <View style={styles.priceRow}>
                         <ThemedText type="default" style={styles.priceText}>
                           {formatPrice(product.price)}
                         </ThemedText>
-                        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                          {/* Quick Add to Cart Button */}
-                          <Pressable
-                            onPress={(e) => {
-                              e.stopPropagation?.();
-                              addToCart(product, 1);
-                            }}
-                            style={({ pressed }) => [
-                              styles.buyButton,
-                              { backgroundColor: '#007AFF', paddingHorizontal: Spacing.two },
-                              pressed && styles.pressed,
-                            ]}
-                          >
-                            <SymbolView
-                              tintColor="#ffffff"
-                              name={{ ios: 'cart.badge.plus', android: 'add_shopping_cart', web: 'add_shopping_cart' } as any}
-                              size={15}
-                            />
-                            <ThemedText type="smallBold" style={styles.buyButtonText}>
-                              +Cart
-                            </ThemedText>
-                          </Pressable>
-
-                          {isAdmin && (
-                            <>
-                              <Pressable
-                                onPress={(e) => {
-                                  e.stopPropagation?.();
-                                  router.push({
-                                    pathname: '/edit' as any,
-                                    params: {
-                                      id: String(product.id),
-                                    },
-                                  });
-                                }}
-                                style={({ pressed }) => [
-                                  styles.buyButton,
-                                  { backgroundColor: '#FF9500' },
-                                  pressed && styles.pressed,
-                                ]}
-                              >
-                                <ThemedText type="smallBold" style={styles.buyButtonText}>
-                                  Edit
-                                </ThemedText>
-                              </Pressable>
-                              <Pressable
-                                onPress={(e) => {
-                                  e.stopPropagation?.();
-                                  handleDeleteProduct(product.id, product.name);
-                                }}
-                                style={({ pressed }) => [
-                                  styles.buyButton,
-                                  { backgroundColor: '#FF3B30' },
-                                  pressed && styles.pressed,
-                                ]}
-                              >
-                                <ThemedText type="smallBold" style={styles.buyButtonText}>
-                                  Delete
-                                </ThemedText>
-                              </Pressable>
-                            </>
-                          )}
-                        </View>
                       </View>
                     </View>
                   </ThemedView>
@@ -525,27 +371,28 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: Spacing.four,
     overflow: 'hidden',
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.two,
   },
   productImage: {
     width: '100%',
-    height: 200,
+    height: 190,
     backgroundColor: 'rgba(128,128,128,0.05)',
   },
   cardContent: {
-    flex: 1,
     padding: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 2,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontWeight: '600',
   },
   ratingText: {
     fontSize: 12,
@@ -553,33 +400,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   productName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-  },
-  productDescription: {
-    fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 22,
+    minHeight: 44,
   },
   priceRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     marginTop: Spacing.one,
   },
   priceText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  buyButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  buyButtonText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#007AFF',
   },
   pressed: {
     opacity: 0.8,
@@ -598,5 +433,11 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     marginTop: Spacing.two,
   },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
+
 
