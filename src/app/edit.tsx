@@ -20,7 +20,7 @@ export default function EditProductScreen({
   onCancel,
 }: EditProductScreenProps = {}) {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id?: string; name?: string; price?: string; stock?: string; category?: string; location?: string; image?: string; description?: string }>();
+  const params = useLocalSearchParams<{ id?: string; name?: string; price?: string; stock?: string; category?: string; location?: string; image?: string; description?: string; rating?: string }>();
 
   const [productData, setProductData] = useState<EditableProduct | null>(propProduct || null);
   const [fetching, setFetching] = useState<boolean>(!propProduct && !!params.id);
@@ -43,6 +43,7 @@ export default function EditProductScreen({
         location_text: params.location || '',
         image_url: params.image || '',
         description: params.description || '',
+        rating: params.rating ? parseFloat(params.rating) : undefined,
       });
       setFetching(false);
       return;
@@ -65,6 +66,7 @@ export default function EditProductScreen({
               location_text: d.Location || d.location || d.location_text || '',
               image_url: d.image || d.image_url || '',
               description: d.Description || d.description || '',
+              rating: d.Rating || d.rating || undefined,
             });
           } else {
             Alert.alert('Error', 'Product not found');

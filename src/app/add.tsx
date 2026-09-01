@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import * as ImagePicker from 'expo-image-picker';
 import { TopHeader } from '@/components/top-header';
+import { StarRating } from '@/components/star-rating';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -33,6 +34,7 @@ export interface EditableProduct {
   image_url?: string;
   price?: number;
   description?: string;
+  rating?: number;
 }
 
 export interface AddProductScreenProps {
@@ -55,6 +57,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
   const [imagePreview, setImagePreview] = useState<string | null>(product?.image_url ?? null);
   const [description, setDescription] = useState(product?.description ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(product?.category ?? null);
+  const [rating, setRating] = useState<number>(product?.rating ?? 5);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -92,6 +95,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
       setImagePreview(product.image_url ?? null);
       setDescription(product.description ?? '');
       setSelectedCategory(product.category ?? null);
+      setRating(product.rating ?? 5);
     }
   }, [product]);
 
@@ -177,6 +181,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
         badge_status: product?.badge_status || 'Active',
         image_url: imageUrl || null,
         description: description.trim(),
+        rating,
       };
 
       const url = isEditMode && product?.id ? `${getProductsApiUrl()}/${product.id}` : getProductsApiUrl();
@@ -210,6 +215,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           setImagePreview(null);
           setDescription('');
           setSelectedCategory(null);
+          setRating(5);
         }
 
         if (onSuccess) {
@@ -416,6 +422,12 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                   );
                 })}
               </View>
+            </View>
+
+            {/* Rating */}
+            <View style={styles.fieldGroup}>
+              <ThemedText type="smallBold" style={styles.label}>Rating</ThemedText>
+              <StarRating value={rating} onChange={setRating} />
             </View>
 
             {/* Description */}
