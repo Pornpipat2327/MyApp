@@ -305,50 +305,6 @@ export default function LoginScreen() {
                     </ThemedText>
                   )}
                 </Pressable>
-
-                {/* Quick Test Fill for Admin and User */}
-                {mode === 'login' && (
-                  <View style={styles.quickFillContainer as any}>
-                    <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.two }}>
-                      💡 Quick Test Login Credentials (เลือกทดสอบสิทธิ์):
-                    </ThemedText>
-                    <View style={{ gap: Spacing.two }}>
-                      <Pressable
-                        onPress={() => {
-                          setUsername('admin');
-                          setPassword('adminpassword');
-                          setErrorMsg(null);
-                        }}
-                        style={({ pressed }) => [
-                          styles.quickFillButton,
-                          { backgroundColor: theme.background, borderColor: '#007AFF' },
-                          pressed && styles.pressed,
-                        ] as any}
-                      >
-                        <ThemedText type="smallBold" style={{ color: '#007AFF', textAlign: 'center' }}>
-                          👑 Admin Account (admin / adminpassword) — แสดงปุ่ม Add
-                        </ThemedText>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={() => {
-                          setUsername('user');
-                          setPassword('userpassword');
-                          setErrorMsg(null);
-                        }}
-                        style={({ pressed }) => [
-                          styles.quickFillButton,
-                          { backgroundColor: theme.background, borderColor: '#34C759' },
-                          pressed && styles.pressed,
-                        ] as any}
-                      >
-                        <ThemedText type="smallBold" style={{ color: '#34C759', textAlign: 'center' }}>
-                          👤 User Account (user / userpassword) — ซ่อนปุ่ม Add
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  </View>
-                )}
               </>
             )}
           </ThemedView>
@@ -463,18 +419,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
-  },
-  quickFillContainer: {
-    marginTop: Spacing.four,
-    paddingTop: Spacing.three,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128,128,128,0.15)',
-  },
-  quickFillButton: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.two,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.3)',
   },
 });
