@@ -6,6 +6,7 @@ import { Platform, useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { CartProvider } from '@/context/cart-context';
+import { useAutoLogout } from '@/hooks/use-auto-logout';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -13,6 +14,10 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Standalone Plug-and-play Auto Logout
+  useAutoLogout();
+
 
   useEffect(() => {
     const checkAuthAndRedirect = () => {
