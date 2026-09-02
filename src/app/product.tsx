@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TopHeader } from '@/components/top-header';
+import { PriceRangeFilter } from '@/components/price-range-filter';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SymbolView } from 'expo-symbols';
@@ -33,7 +34,6 @@ interface Product {
 }
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
-type PriceFilter = 'all' | 'under100' | '100to200' | 'over200';
 
 export default function ProductScreen() {
   const theme = useTheme();
@@ -46,9 +46,35 @@ export default function ProductScreen() {
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState(params.search || params.category || '');
   const [sortOption, setSortOption] = useState<SortOption>('default');
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>('all');
   const [inStockOnly, setInStockOnly] = useState(false);
   const [ratingFourPlus, setRatingFourPlus] = useState(false);
+
+  // Dynamic Price Range from product list
+  const { absMin, absMax } = useMemo(() => {
+    if (products.length === 0) return { absMin: 0, absMax: 10000 };
+    const numericPrices = products
+      .map((p) => Number(p.price || 0))
+      .filter((n) => !isNaN(n) && n >= 0);
+    if (numericPrices.length === 0) return { absMin: 0, absMax: 10000 };
+    const min = Math.floor(Math.min(...numericPrices));
+    const max = Math.ceil(Math.max(...numericPrices));
+    return {
+      absMin: Math.max(0, min),
+      absMax: Math.max(min + 100, max),
+    };
+  }, [products]);
+
+  // Selected Price Range [min, max]
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [hasCustomPriceFilter, setHasCustomPriceFilter] = useState(false);
+
+  // Sync initial price range when products load
+  useEffect(() => {
+    if (products.length > 0 && !hasCustomPriceFilter) {
+      setPriceRange([absMin, absMax]);
+    }
+  }, [absMin, absMax, products.length, hasCustomPriceFilter]);
+
 
   // Auth check and refetch products every time this screen comes into focus
   useFocusEffect(
@@ -122,21 +148,27 @@ export default function ProductScreen() {
     });
   };
 
+  const handlePriceRangeChange = useCallback((newMin: number, newMax: number) => {
+    setPriceRange([newMin, newMax]);
+    setHasCustomPriceFilter(true);
+  }, []);
+
   const isAnyFilterActive =
     searchQuery.trim() !== '' ||
-    priceFilter !== 'all' ||
+    hasCustomPriceFilter ||
     inStockOnly ||
     ratingFourPlus;
 
   const resetAllFilters = () => {
     setSearchQuery('');
-    setPriceFilter('all');
+    setHasCustomPriceFilter(false);
+    setPriceRange([absMin, absMax]);
     setInStockOnly(false);
     setRatingFourPlus(false);
     setSortOption('default');
   };
 
-  // Level 1 & 2: Multi-token search + Level 3: Multi-faceted filters
+  // Level 1 & 2: Multi-token search + Level 3: Custom Price Range & Filters
   const sortedProducts = useMemo(() => {
     let list = [...products];
 
@@ -149,13 +181,12 @@ export default function ProductScreen() {
       });
     }
 
-    // Price Filter
-    if (priceFilter === 'under100') {
-      list = list.filter((p) => Number(p.price || 0) < 100);
-    } else if (priceFilter === '100to200') {
-      list = list.filter((p) => Number(p.price || 0) >= 100 && Number(p.price || 0) <= 200);
-    } else if (priceFilter === 'over200') {
-      list = list.filter((p) => Number(p.price || 0) > 200);
+    // Dynamic Price Range Filter (Min & Max)
+    if (hasCustomPriceFilter) {
+      list = list.filter((p) => {
+        const val = Number(p.price || 0);
+        return val >= priceRange[0] && val <= priceRange[1];
+      });
     }
 
     // In Stock Only
@@ -179,7 +210,8 @@ export default function ProductScreen() {
       return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
     return list;
-  }, [products, searchQuery, priceFilter, inStockOnly, ratingFourPlus, sortOption]);
+  }, [products, searchQuery, hasCustomPriceFilter, priceRange, inStockOnly, ratingFourPlus, sortOption]);
+
 
   // Level 4: Recommended keyboards when 0 matches
   const recommendedProducts = useMemo(() => {
@@ -229,76 +261,50 @@ export default function ProductScreen() {
             </ThemedText>
           </View>
 
-          {/* Level 3: Advanced Filter Bar */}
+          {/* Level 3: Advanced Price Range & Filter Bar */}
           {!loading && !error && (
             <View style={styles.filterBarContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipsRow}>
-                {/* Price Filter Chips */}
-                <Pressable
-                  onPress={() => setPriceFilter('all')}
-                  style={[styles.filterChip, priceFilter === 'all' && styles.filterChipActive]}
-                >
-                  <ThemedText type="smallBold" style={[styles.filterChipText, priceFilter === 'all' && styles.filterChipTextActive]}>
-                    All Prices
-                  </ThemedText>
-                </Pressable>
+              <View style={styles.priceRangeCard}>
+                <PriceRangeFilter
+                  absoluteMin={absMin}
+                  absoluteMax={absMax}
+                  minPrice={priceRange[0]}
+                  maxPrice={priceRange[1]}
+                  onPriceChange={handlePriceRangeChange}
+                  title="ช่วงราคา"
+                />
 
-                <Pressable
-                  onPress={() => setPriceFilter(priceFilter === 'under100' ? 'all' : 'under100')}
-                  style={[styles.filterChip, priceFilter === 'under100' && styles.filterChipActive]}
-                >
-                  <ThemedText type="smallBold" style={[styles.filterChipText, priceFilter === 'under100' && styles.filterChipTextActive]}>
-                    &lt; $100
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setPriceFilter(priceFilter === '100to200' ? 'all' : '100to200')}
-                  style={[styles.filterChip, priceFilter === '100to200' && styles.filterChipActive]}
-                >
-                  <ThemedText type="smallBold" style={[styles.filterChipText, priceFilter === '100to200' && styles.filterChipTextActive]}>
-                    $100 - $200
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setPriceFilter(priceFilter === 'over200' ? 'all' : 'over200')}
-                  style={[styles.filterChip, priceFilter === 'over200' && styles.filterChipActive]}
-                >
-                  <ThemedText type="smallBold" style={[styles.filterChipText, priceFilter === 'over200' && styles.filterChipTextActive]}>
-                    &gt; $200
-                  </ThemedText>
-                </Pressable>
-
-                {/* In Stock Only */}
-                <Pressable
-                  onPress={() => setInStockOnly(!inStockOnly)}
-                  style={[styles.filterChip, inStockOnly && styles.filterChipActive]}
-                >
-                  <ThemedText type="smallBold" style={[styles.filterChipText, inStockOnly && styles.filterChipTextActive]}>
-                    📦 In Stock
-                  </ThemedText>
-                </Pressable>
-
-                {/* Rating 4.0+ */}
-                <Pressable
-                  onPress={() => setRatingFourPlus(!ratingFourPlus)}
-                  style={[styles.filterChip, ratingFourPlus && styles.filterChipActive]}
-                >
-                  <ThemedText type="smallBold" style={[styles.filterChipText, ratingFourPlus && styles.filterChipTextActive]}>
-                    ★ 4.0+
-                  </ThemedText>
-                </Pressable>
-
-                {/* Reset Filters CTA */}
-                {isAnyFilterActive && (
-                  <Pressable onPress={resetAllFilters} style={styles.resetFilterChip}>
-                    <ThemedText type="smallBold" style={styles.resetFilterText}>
-                      ✕ Reset All
+                <View style={styles.filterChipsRow}>
+                  {/* In Stock Only */}
+                  <Pressable
+                    onPress={() => setInStockOnly(!inStockOnly)}
+                    style={[styles.filterChip, inStockOnly && styles.filterChipActive]}
+                  >
+                    <ThemedText type="smallBold" style={[styles.filterChipText, inStockOnly && styles.filterChipTextActive]}>
+                      📦 In Stock Only
                     </ThemedText>
                   </Pressable>
-                )}
-              </ScrollView>
+
+                  {/* Rating 4.0+ */}
+                  <Pressable
+                    onPress={() => setRatingFourPlus(!ratingFourPlus)}
+                    style={[styles.filterChip, ratingFourPlus && styles.filterChipActive]}
+                  >
+                    <ThemedText type="smallBold" style={[styles.filterChipText, ratingFourPlus && styles.filterChipTextActive]}>
+                      ★ 4.0+ Stars
+                    </ThemedText>
+                  </Pressable>
+
+                  {/* Reset Filters CTA */}
+                  {isAnyFilterActive && (
+                    <Pressable onPress={resetAllFilters} style={styles.resetFilterChip}>
+                      <ThemedText type="smallBold" style={styles.resetFilterText}>
+                        ✕ ล้างตัวกรอง
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
             </View>
           )}
 
@@ -518,6 +524,14 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
     marginBottom: Spacing.three,
+  },
+  priceRangeCard: {
+    backgroundColor: '#262423',
+    borderWidth: 1,
+    borderColor: '#3d3938',
+    borderRadius: 8,
+    padding: Spacing.four,
+    gap: Spacing.three,
   },
   filterChipsRow: {
     flexDirection: 'row',
