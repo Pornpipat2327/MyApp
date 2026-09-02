@@ -1,7 +1,11 @@
+/**
+ * @file explore.tsx
+ * @description หน้าจอคู่มือและข้อมูลการเริ่มต้นใช้งาน (Explore & Documentation Screen)
+ */
+
 import React from 'react';
-import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TopHeader } from '@/components/top-header';
@@ -28,9 +32,9 @@ export default function TabTwoScreen() {
         >
           <ThemedView style={styles.container}>
             <ThemedView style={styles.titleContainer}>
-              <ThemedText type="subtitle">Explore</ThemedText>
+              <ThemedText type="subtitle">คู่มือการพัฒนา (Explore)</ThemedText>
               <ThemedText style={styles.centerText} themeColor="textSecondary">
-                This starter app includes example{'\n'}code to help you get started.
+                เอกสารประกอบการพัฒนาแอปพลิเคชันด้วย Expo React Native
               </ThemedText>
 
               <ExternalLink href="https://docs.expo.dev" asChild>
@@ -50,64 +54,25 @@ export default function TabTwoScreen() {
             <ThemedView style={styles.sectionsWrapper}>
               <Collapsible title="File-based routing">
                 <ThemedText type="small">
-                  This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-                  <ThemedText type="code">src/app/explore.tsx</ThemedText>
+                  แอปพลิเคชันนี้ใช้ Expo Router โครงสร้างโฟลเดอร์ใน <ThemedText type="code">src/app/</ThemedText> จะถูกแปลงเป็นเส้นทาง Routing โดยอัตโนมัติ
                 </ThemedText>
-                <ThemedText type="small">
-                  The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-                  the tab navigator.
-                </ThemedText>
-                <ExternalLink href="https://docs.expo.dev/router/introduction">
-                  <ThemedText type="linkPrimary">Learn more</ThemedText>
-                </ExternalLink>
               </Collapsible>
 
               <Collapsible title="Android, iOS, and web support">
                 <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
                   <ThemedText type="small">
-                    You can open this project on Android, iOS, and the web. To open the web version,
-                    press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                    project.
+                    โปรเจกต์นี้รองรับ Cross-platform ทั้งบน Android, iOS และ Web Browser
                   </ThemedText>
-                  <Image
-                    source={require('@/assets/images/tutorial-web.png')}
-                    style={styles.imageTutorial}
-                  />
                 </ThemedView>
               </Collapsible>
 
-              <Collapsible title="Images">
+              <Collapsible title="Architecture & Design System">
                 <ThemedText type="small">
-                  For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-                  <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-                  screen densities.
-                </ThemedText>
-                <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-                <ExternalLink href="https://reactnative.dev/docs/images">
-                  <ThemedText type="linkPrimary">Learn more</ThemedText>
-                </ExternalLink>
-              </Collapsible>
-
-              <Collapsible title="Light and dark mode components">
-                <ThemedText type="small">
-                  This template has light and dark mode support. The{' '}
-                  <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-                  user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-                </ThemedText>
-                <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-                  <ThemedText type="linkPrimary">Learn more</ThemedText>
-                </ExternalLink>
-              </Collapsible>
-
-              <Collapsible title="Animations">
-                <ThemedText type="small">
-                  This template includes an example of an animated component. The{' '}
-                  <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-                  the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-                  animate opening this hint.
+                  ออกแบบโดยแยกโมดูลฟังก์ชันการทำงานเป็นสัดส่วน (Modular Architecture) สไตล์ Voxel Design System
                 </ThemedText>
               </Collapsible>
             </ThemedView>
+
             {Platform.OS === 'web' && <WebBadge />}
           </ThemedView>
         </ScrollView>
@@ -157,22 +122,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionsWrapper: {
-    gap: Spacing.five,
+    gap: Spacing.four,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
   },
   collapsibleContent: {
     alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
+    padding: Spacing.three,
+    borderRadius: 6,
   },
 });

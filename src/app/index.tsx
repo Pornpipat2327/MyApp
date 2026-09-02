@@ -1,30 +1,59 @@
+/**
+ * @file index.tsx
+ * @description หน้าหลักของแอปพลิเคชัน (Home Screen)
+ * ประกอบด้วยส่วนต้อนรับผู้ใช้, เมนูลัด (Quick Actions), การ์ดสถิติต่างๆ และรายการสินค้ามาใหม่ล่าสุด
+ */
+
+import React, { useEffect, useState } from 'react';
+import {
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TopHeader } from '@/components/top-header';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { useEffect, useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, StyleSheet, View, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
+import { getProductsApiUrl } from '@/constants/api';
+import { Product } from '@/types/product';
+import { getImageSource } from '@/utils/image';
+import { getStorageJSON } from '@/utils/storage';
 
 const QUICK_ACTIONS = [
-  { id: 'qa1', label: 'Add Product', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as const, color: '#007AFF', route: '/add' as const },
-  { id: 'qa2', label: 'View Products', icon: { ios: 'list.bullet.rectangle.fill', android: 'inventory_2', web: 'inventory_2' } as const, color: '#30D158', route: '/product' as const },
-  { id: 'qa3', label: 'My Cart', icon: { ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' } as const, color: '#FF9500', route: '/cart' as const },
-  { id: 'qa4', label: 'Orders', icon: { ios: 'doc.plaintext.fill', android: 'receipt_long', web: 'receipt_long' } as const, color: '#AF52DE', route: '/orders' as const },
-  { id: 'qa5', label: 'Categories', icon: { ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' } as const, color: '#FF453A', route: '/categories' as const },
+  { id: 'qa1', label: 'เพิ่มสินค้า', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as const, color: '#007AFF', route: '/add' as const },
+  { id: 'qa2', label: 'ดูสินค้า', icon: { ios: 'list.bullet.rectangle.fill', android: 'inventory_2', web: 'inventory_2' } as const, color: '#30D158', route: '/product' as const },
+  { id: 'qa3', label: 'ตะกร้า', icon: { ios: 'cart.fill', android: 'shopping_cart', web: 'shopping_cart' } as const, color: '#FF9500', route: '/cart' as const },
+  { id: 'qa4', label: 'คำสั่งซื้อ', icon: { ios: 'doc.plaintext.fill', android: 'receipt_long', web: 'receipt_long' } as const, color: '#AF52DE', route: '/orders' as const },
+  { id: 'qa5', label: 'หมวดหมู่', icon: { ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' } as const, color: '#FF453A', route: '/categories' as const },
 ];
 
-function SectionHeader({ title, actionText, onPress }: { title: string; actionText?: string; onPress?: () => void }) {
+function SectionHeader({
+  title,
+  actionText,
+  onPress,
+}: {
+  title: string;
+  actionText?: string;
+  onPress?: () => void;
+}) {
   return (
     <View style={styles.sectionHeader}>
-      <ThemedText type="smallBold" style={styles.sectionTitle}>{title}</ThemedText>
+      <ThemedText type="smallBold" style={styles.sectionTitle}>
+        {title}
+      </ThemedText>
       {actionText && (
         <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
-          <ThemedText type="small" style={styles.sectionLink}>{actionText}</ThemedText>
+          <ThemedText type="small" style={styles.sectionLink}>
+            {actionText}
+          </ThemedText>
         </Pressable>
       )}
     </View>
@@ -34,26 +63,34 @@ function SectionHeader({ title, actionText, onPress }: { title: string; actionTe
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
+
+  // ดึงข้อมูลผู้ใช้ปัจจุบันแบบ Lazy Initializer
+  const [user, setUser] = useState<any>(() => {
+    return getStorageJSON('user', null);
+  });
+
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    const u = getStorageJSON<{ role?: string }>('user', {});
+    return u?.role === 'admin';
+  });
+
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkUser = () => {
-      let savedUser = null;
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        savedUser = localStorage.getItem('user');
-      }
-      if (!savedUser) {
-        router.replace('/login' as any);
-      } else {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          setUser(parsedUser);
-          setIsAdmin(parsedUser?.role === 'admin');
-        } catch (e) {
+        const savedUser = localStorage.getItem('user');
+        if (!savedUser) {
           router.replace('/login' as any);
+        } else {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            setIsAdmin(parsedUser?.role === 'admin');
+          } catch {
+            router.replace('/login' as any);
+          }
         }
       }
     };
@@ -64,15 +101,15 @@ export default function HomeScreen() {
       window.addEventListener('storage', checkUser);
       window.addEventListener('auth-change', checkUser);
     }
-    
-    // Fetch API Data
+
+    // ดึงข้อมูลสินค้าจาก REST API
     fetch(getProductsApiUrl())
-      .then(res => res.json())
-      .then(json => {
+      .then((res) => res.json())
+      .then((json) => {
         const rawData = Array.isArray(json) ? json : json.data || [];
         setProducts(rawData);
       })
-      .catch(err => console.error(err))
+      .catch((err) => console.error('Fetch products error:', err))
       .finally(() => setLoading(false));
 
     return () => {
@@ -81,23 +118,10 @@ export default function HomeScreen() {
         window.removeEventListener('auth-change', checkUser);
       }
     };
-  }, []);
+  }, [router]);
 
   const totalProducts = products.length;
-  // Get 5 most recent products
   const recentProducts = [...products].reverse().slice(0, 5);
-
-  const getImageSource = (imagePath?: string) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
-      return { uri: imagePath };
-    }
-    // รองรับ /uploads/ path จาก server
-    if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/')) {
-      return { uri: `${getBaseUrl()}${imagePath}` };
-    }
-    return null;
-  };
 
   return (
     <ThemedView type="background" style={styles.root}>
@@ -109,7 +133,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollInner}
           showsVerticalScrollIndicator={false}
         >
-          {/* Welcome */}
+          {/* ส่วนต้อนรับผู้ใช้ */}
           <View style={styles.content}>
             <View style={styles.welcomeRow}>
               <View style={styles.welcomeText}>
@@ -133,90 +157,127 @@ export default function HomeScreen() {
               >
                 <SymbolView
                   tintColor={theme.textSecondary}
-                  name={{ ios: 'person.crop.circle.fill', android: 'account_circle', web: 'account_circle' }}
+                  name={{
+                    ios: 'person.crop.circle.fill',
+                    android: 'account_circle',
+                    web: 'account_circle',
+                  }}
                   size={44}
                 />
               </Pressable>
             </View>
-          </View>
 
-          {/* Stats */}
-          <View style={[styles.content, styles.statsGrid]}>
-             <ThemedView type="backgroundElement" style={styles.statCard}>
-                <View style={[styles.statIcon, { backgroundColor: '#007AFF18' }]}>
-                  <SymbolView tintColor="#007AFF" name={{ ios: 'shippingbox.fill', android: 'inventory_2', web: 'inventory_2' }} size={16} />
-                </View>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.statLabel}>Total Products</ThemedText>
-                {loading ? (
-                    <ActivityIndicator size="small" color="#007AFF" style={{ alignSelf: 'flex-start', marginVertical: 4 }} />
-                ) : (
-                    <ThemedText type="subtitle" style={styles.statValue}>{totalProducts}</ThemedText>
-                )}
+            {/* การ์ดสถิติ (Statistics Cards) */}
+            <View style={styles.statsRow}>
+              <ThemedView type="backgroundElement" style={styles.statCard}>
+                <ThemedText type="subtitle" style={{ color: '#6cc349', fontSize: 24 }}>
+                  {loading ? '-' : totalProducts}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  สินค้าทั้งหมด
+                </ThemedText>
               </ThemedView>
-          </View>
 
-          {/* Quick Actions */}
-          <SectionHeader title="Quick Actions" />
-          <View style={[styles.content, styles.actionsRow]}>
-            {QUICK_ACTIONS.filter((a) => isAdmin || a.id !== 'qa1').map((a) => (
-              <Pressable
-                key={a.id}
-                onPress={() => router.push(a.route as any)}
-                style={({ pressed }) => [styles.actionCard, pressed && styles.pressed]}
-              >
-                <ThemedView type="backgroundElement" style={styles.actionInner}>
-                  <View style={[styles.actionIcon, { backgroundColor: a.color + '18' }]}>
-                    <SymbolView tintColor={a.color} name={a.icon} size={20} />
-                  </View>
-                  <ThemedText type="small" style={styles.actionLabel}>{a.label}</ThemedText>
-                </ThemedView>
-              </Pressable>
-            ))}
-          </View>
+              <ThemedView type="backgroundElement" style={styles.statCard}>
+                <ThemedText type="subtitle" style={{ color: '#007AFF', fontSize: 24 }}>
+                  6
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  หมวดหมู่หลัก
+                </ThemedText>
+              </ThemedView>
 
-          {/* Recent Products (From API) */}
-          <SectionHeader title="Recent Products" actionText="See All" onPress={() => router.push('/product')} />
-          <View style={styles.content}>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              {loading ? (
-                  <View style={{ padding: 20, alignItems: 'center' }}>
-                      <ActivityIndicator size="small" color={theme.text} />
-                  </View>
-              ) : recentProducts.length === 0 ? (
-                  <View style={{ padding: 20, alignItems: 'center' }}>
-                      <ThemedText type="small" themeColor="textSecondary">No products found</ThemedText>
-                  </View>
-              ) : (
-                  recentProducts.map((p, i) => {
-                    const imgSrc = getImageSource(p.image || p.Image || p.image_url);
-                    return (
-                      <Pressable
-                        key={p.id || p.Product_ID || i}
-                        onPress={() => router.push({ pathname: '/detail' as any, params: { id: String(p.id || p.Product_ID) } })}
-                        style={({ pressed }) => pressed && { opacity: 0.8 }}
-                      >
-                        <View style={styles.productRow}>
-                          {imgSrc ? (
-                            <Image source={imgSrc} style={styles.productThumb} resizeMode="cover" />
-                          ) : (
-                            <View style={[styles.productThumb, { backgroundColor: theme.backgroundSelected, alignItems: 'center', justifyContent: 'center' }]}>
-                              <SymbolView name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' }} tintColor={theme.textSecondary} size={20} />
-                            </View>
-                          )}
-                          <View style={styles.productInfo}>
-                            <ThemedText type="smallBold" numberOfLines={1}>{p.name || p.Name}</ThemedText>
-                            <ThemedText type="small" themeColor="textSecondary" style={styles.productSold}>{p.category || p.Category || 'General'}</ThemedText>
-                          </View>
-                          <ThemedText type="smallBold" style={styles.productRev}>${Number(p.price || p.Price || 0).toFixed(2)}</ThemedText>
-                        </View>
-                        {i < recentProducts.length - 1 && <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />}
-                      </Pressable>
-                    );
-                  })
-              )}
-            </ThemedView>
-          </View>
+              <ThemedView type="backgroundElement" style={styles.statCard}>
+                <ThemedText type="subtitle" style={{ color: '#FF9500', fontSize: 24 }}>
+                  {isAdmin ? 'Admin' : 'User'}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  สิทธิ์ปัจจุบัน
+                </ThemedText>
+              </ThemedView>
+            </View>
 
+            {/* เมนูลัด (Quick Actions) */}
+            <SectionHeader title="เมนูจัดการด่วน (Quick Actions)" />
+            <View style={styles.quickActionsGrid}>
+              {QUICK_ACTIONS.filter((qa) => qa.id !== 'qa1' || isAdmin).map((qa) => (
+                <Pressable
+                  key={qa.id}
+                  onPress={() => router.push(qa.route as any)}
+                  style={({ pressed }) => [styles.quickActionItem, pressed && styles.pressed]}
+                >
+                  <View style={[styles.qaIconCircle, { backgroundColor: qa.color }]}>
+                    <SymbolView
+                      tintColor="#ffffff"
+                      name={qa.icon as any}
+                      size={22}
+                    />
+                  </View>
+                  <ThemedText type="smallBold" style={{ fontSize: 12 }}>
+                    {qa.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* สินค้ามาใหม่ล่าสุด */}
+            <SectionHeader
+              title="สินค้ามาใหม่ (Latest Products)"
+              actionText="ดูทั้งหมด →"
+              onPress={() => router.push('/product')}
+            />
+
+            {loading ? (
+              <ActivityIndicator color="#6cc349" style={{ marginVertical: Spacing.four }} />
+            ) : recentProducts.length === 0 ? (
+              <ThemedView type="backgroundElement" style={styles.emptyProducts}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  ยังไม่มีรายการสินค้าในระบบ
+                </ThemedText>
+              </ThemedView>
+            ) : (
+              <View style={styles.recentList}>
+                {recentProducts.map((p) => {
+                  const imgSrc = getImageSource(p.image);
+                  return (
+                    <Pressable
+                      key={p.id}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/detail' as any,
+                          params: { id: String(p.id) },
+                        })
+                      }
+                      style={({ pressed }) => [
+                        styles.recentItemRow,
+                        { borderBottomColor: theme.border },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <View style={styles.recentThumbBox}>
+                        {imgSrc ? (
+                          <Image source={imgSrc} style={styles.recentThumb} resizeMode="cover" />
+                        ) : (
+                          <View style={[styles.recentThumb, { backgroundColor: theme.border }]} />
+                        )}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText type="smallBold" numberOfLines={1}>
+                          {p.name}
+                        </ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {p.category || 'General'}
+                        </ThemedText>
+                      </View>
+                      <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
+                        ${Number(p.price).toFixed(2)}
+                      </ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -224,133 +285,116 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safe: { flex: 1 },
-  scroll: { flex: 1 },
+  root: {
+    flex: 1,
+  },
+  safe: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
   scrollInner: {
-    paddingBottom: BottomTabInset + Spacing.four,
-  },
-  pressed: { opacity: 0.75 },
-
-  content: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    paddingHorizontal: Spacing.four,
-  },
-
-  sectionHeader: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingBottom: BottomTabInset + Spacing.six,
     alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    marginTop: Spacing.five,
-    marginBottom: Spacing.three,
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: '#d0c5c0',                // grey-2 eyebrow text
-    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
+  content: {
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    padding: Spacing.four,
+    gap: Spacing.four,
   },
-  sectionLink: { fontWeight: '700', color: '#6cc349', fontSize: 12 }, // vanilla-green-3
-
-  card: {
-    borderRadius: 0,                 // 0px voxel doctrine
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderColor: '#3d3938',          // surface-dark-soft border
-  },
-
   welcomeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.one,
   },
-  welcomeText: { flex: 1, gap: Spacing.one },
+  welcomeText: {
+    gap: 2,
+  },
   welcomeTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    lineHeight: 26,
-    color: '#ffffff',
-    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
+    fontSize: 22,
+    lineHeight: 28,
   },
-  welcomeSub: { fontSize: 13, marginTop: 2 },
+  welcomeSub: {
+    fontSize: 13,
+  },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 0,                 // 0px voxel doctrine
-    alignItems: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#3d3938',
+    alignItems: 'center',
   },
-
-  statsGrid: {
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    marginTop: Spacing.four,
+    gap: Spacing.three,
   },
   statCard: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    borderRadius: 0,                 // 0px voxel doctrine
+    flex: 1,
     padding: Spacing.three,
-    gap: 3,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#3d3938',
-  },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 0,                 // 0px voxel doctrine
+    borderColor: 'rgba(128, 128, 128, 0.15)',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
+    gap: 4,
   },
-  statLabel: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase' },
-  statValue: { fontSize: 22, fontWeight: '800', lineHeight: 26, color: '#6cc349' }, // vanilla-green-3
-
-  actionsRow: {
+  sectionHeader: {
     flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  actionCard: { flex: 1 },
-  actionInner: {
+    justifyContent: 'space-between',
     alignItems: 'center',
-    borderRadius: 0,                 // 0px voxel doctrine
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    paddingVertical: Spacing.three,
-    gap: Spacing.two,
+    marginTop: Spacing.two,
   },
-  actionIcon: {
+  sectionTitle: {
+    fontSize: 15,
+  },
+  sectionLink: {
+    color: '#007AFF',
+    fontSize: 13,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
+  },
+  quickActionItem: {
+    alignItems: 'center',
+    gap: 6,
+    width: 70,
+  },
+  qaIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyProducts: {
+    padding: Spacing.four,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  recentList: {
+    gap: 2,
+  },
+  recentItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+  },
+  recentThumbBox: {
     width: 40,
     height: 40,
-    borderRadius: 0,                 // 0px voxel doctrine
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  actionLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center', letterSpacing: 0.5 },
-
-  productRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.two,
+  recentThumb: {
+    width: '100%',
+    height: '100%',
   },
-  productThumb: { width: 44, height: 44, borderRadius: 0 },  // 0px voxel doctrine
-  productInfo: { flex: 1, gap: 1 },
-  productSold: { fontSize: 11 },
-  productRev: { fontSize: 13, color: '#6cc349' },            // vanilla-green-3
-
-  divider: { height: 1, marginVertical: 2 },
+  pressed: {
+    opacity: 0.7,
+  },
 });

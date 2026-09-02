@@ -1,66 +1,41 @@
+/**
+ * @file add.tsx
+ * @description หน้าจอเพิ่มสินค้าใหม่ลงในระบบ (Add Product Screen)
+ * จำกัดสิทธิ์ให้เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถเพิ่มสินค้าได้
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
   View,
   Pressable,
-  TextInput,
   Platform,
   Alert,
-  ActivityIndicator,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import * as ImagePicker from 'expo-image-picker';
 import { TopHeader } from '@/components/top-header';
-import { StarRating } from '@/components/star-rating';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { getProductsApiUrl, getUploadApiUrl } from '@/constants/api';
-
-const CATEGORIES = ['Gaming', 'Wireless', 'Vintage', 'Ergonomic', 'Compact', 'Mechanical'];
-
-export interface EditableProduct {
-  id?: string;
-  name: string;
-  category?: string;
-  stock?: number;
-  location_text?: string;
-  badge_status?: string;
-  image_url?: string;
-  price?: number;
-  description?: string;
-  rating?: number;
-}
+import { getProductsApiUrl } from '@/constants/api';
+import { ProductFormData } from '@/types/product';
+import { ProductForm } from '@/components/product-form/product-form';
+import { isCurrentUserAdmin } from '@/utils/storage';
 
 export interface AddProductScreenProps {
-  existingCategories?: string[];
-  product?: EditableProduct | null;
+  product?: ProductFormData | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export default function AddScreen({ product = null, onSuccess, onCancel }: AddProductScreenProps = {}) {
-  const theme = useTheme();
   const router = useRouter();
-  const isEditMode = !!product;
+  const [submitting, setSubmitting] = useState(false);
 
-  const [name, setName] = useState(product?.name ?? '');
-  const [price, setPrice] = useState(product?.price !== undefined ? String(product.price) : '');
-  const [stock, setStock] = useState(product?.stock !== undefined ? String(product.stock) : '10');
-  const [location, setLocation] = useState(product?.location_text ?? '');
-  const [imageUrl, setImageUrl] = useState(product?.image_url ?? '');
-  const [imagePreview, setImagePreview] = useState<string | null>(product?.image_url ?? null);
-  const [description, setDescription] = useState(product?.description ?? '');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(product?.category ?? null);
-  const [rating, setRating] = useState<number>(product?.rating ?? 5);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
+  // ตรวจสอบสิทธิ์ Admin เมื่อเข้าสู่หน้านี้
   useEffect(() => {
     if (Platform.OS === 'web') {
       const user = localStorage.getItem('user');
@@ -68,154 +43,54 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
         router.replace('/login' as any);
         return;
       }
-      try {
-        const userObj = JSON.parse(user);
-        const role = (userObj?.role ?? '').toLowerCase();
-        if (role !== 'admin') {
-          if (Platform.OS === 'web' && typeof window !== 'undefined') {
-            window.alert('Access Denied: Only administrators can add products.');
-          } else {
-            Alert.alert('Access Denied', 'Only administrators can add products.');
-          }
-          router.replace('/' as any);
+      if (!isCurrentUserAdmin()) {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert('สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Administrator) เท่านั้น');
+        } else {
+          Alert.alert('การเข้าถึงถูกจำกัด', 'สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น');
         }
-      } catch (e) {
-        router.replace('/login' as any);
+        router.replace('/' as any);
       }
     }
-  }, []);
+  }, [router]);
 
-  useEffect(() => {
-    if (product) {
-      setName(product.name ?? '');
-      setPrice(product.price !== undefined ? String(product.price) : '');
-      setStock(product.stock !== undefined ? String(product.stock) : '10');
-      setLocation(product.location_text ?? '');
-      setImageUrl(product.image_url ?? '');
-      setImagePreview(product.image_url ?? null);
-      setDescription(product.description ?? '');
-      setSelectedCategory(product.category ?? null);
-      setRating(product.rating ?? 5);
-    }
-  }, [product]);
-
-  const pickImage = async () => {
-    if (Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
-        return;
-      }
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-      base64: true,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) return;
-
-    const asset = result.assets[0];
-    setImagePreview(asset.uri);
-    setUploading(true);
-
+  /**
+   * ส่งข้อมูลบันทึกสินค้าลง MySQL ผ่าน REST API
+   */
+  const handleSaveProduct = async (formData: ProductFormData) => {
+    setSubmitting(true);
     try {
-      const mimeType = asset.mimeType || 'image/jpeg';
-      const base64Data = `data:${mimeType};base64,${asset.base64}`;
-
-      const response = await fetch(getUploadApiUrl(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Data }),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.success && data.url) {
-        setImageUrl(data.url);
-      } else {
-        const msg = data.message || 'Failed to upload image';
-        if (Platform.OS === 'web') alert(msg);
-        else Alert.alert('Upload Failed', msg);
-        setImagePreview(null);
-        setImageUrl('');
-      }
-    } catch (err: any) {
-      const msg = 'Cannot connect to server. Please check your connection.';
-      if (Platform.OS === 'web') alert(msg);
-      else Alert.alert('Upload Error', msg);
-      setImagePreview(null);
-      setImageUrl('');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeImage = () => {
-    setImagePreview(null);
-    setImageUrl('');
-  };
-
-  const handleSubmit = async () => {
-    if (!name.trim()) {
-      if (Platform.OS === 'web') {
-        alert('400 Bad Request: Missing product name');
-      } else {
-        Alert.alert('Error 400 Bad Request', 'Product name is required');
-      }
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const payload = {
-        name: name.trim(),
-        price: parseFloat(price) || 0,
-        stock: parseInt(stock, 10) || 0,
-        category: selectedCategory || '',
-        location: location.trim() || 'Store Front',
-        location_text: location.trim() || 'Store Front',
-        badge_status: product?.badge_status || 'Active',
-        image_url: imageUrl || null,
-        description: description.trim(),
-        rating,
-      };
-
-      const url = isEditMode && product?.id ? `${getProductsApiUrl()}/${product.id}` : getProductsApiUrl();
-      const method = isEditMode ? 'PUT' : 'POST';
+      const isEdit = !!formData.id;
+      const url = isEdit
+        ? `${getProductsApiUrl()}/${formData.id}`
+        : getProductsApiUrl();
 
       const response = await fetch(url, {
-        method,
+        method: isEdit ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: formData.name,
+          category: formData.category,
+          price: formData.price,
+          stock: formData.stock,
+          location: formData.location_text,
+          image: formData.image_url,
+          description: formData.description,
+          rating: formData.rating,
+        }),
       });
 
       const data = await response.json();
 
-      if (response.ok && (data.success || response.status === 201 || response.status === 200)) {
-        const msg = isEditMode
-          ? `Product updated successfully!`
-          : `Product created successfully! (ID: ${data.productId || 'N/A'})`;
+      if (response.ok && data.success) {
+        const successMsg = isEdit
+          ? `อัปเดตข้อมูล "${formData.name}" สำเร็จ!`
+          : `เพิ่มสินค้า "${formData.name}" สำเร็จ!`;
 
         if (Platform.OS === 'web') {
-          alert(msg);
+          window.alert(successMsg);
         } else {
-          Alert.alert('Success', msg);
-        }
-
-        if (!isEditMode) {
-          setName('');
-          setPrice('');
-          setStock('10');
-          setLocation('');
-          setImageUrl('');
-          setImagePreview(null);
-          setDescription('');
-          setSelectedCategory(null);
-          setRating(5);
+          Alert.alert('สำเร็จ', successMsg);
         }
 
         if (onSuccess) {
@@ -224,23 +99,26 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           router.push('/product');
         }
       } else {
-        const errorMsg = data.error || data.message || (isEditMode ? 'Failed to update product' : 'Failed to add product');
-        if (Platform.OS === 'web') {
-          alert(`Error (${response.status}): ${errorMsg}`);
-        } else {
-          Alert.alert(`Error (${response.status})`, errorMsg);
-        }
+        const errorMsg = data.message || 'บันทึกข้อมูลไม่สำเร็จ';
+        if (Platform.OS === 'web') window.alert(errorMsg);
+        else Alert.alert('ข้อผิดพลาด', errorMsg);
       }
-    } catch (error: any) {
-      console.error('Fetch error:', error);
-      const networkErrMsg = 'Cannot connect to server. Please check DB connection or API URL.';
-      if (Platform.OS === 'web') {
-        alert(`500 Server Error: ${networkErrMsg}`);
-      } else {
-        Alert.alert('500 Server Error', networkErrMsg);
-      }
+    } catch {
+      const errorMsg = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ฐานข้อมูลได้';
+      if (Platform.OS === 'web') window.alert(errorMsg);
+      else Alert.alert('ข้อผิดพลาด', errorMsg);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelAction = () => {
+    if (onCancel) {
+      onCancel();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push('/product');
     }
   };
 
@@ -249,232 +127,37 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <TopHeader />
 
+        {/* แถบหัวเรื่อง */}
+        <View style={styles.headerBar}>
+          <Pressable
+            onPress={handleCancelAction}
+            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+          >
+            <SymbolView
+              tintColor="#6cc349"
+              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
+              size={20}
+            />
+            <ThemedText type="smallBold">ย้อนกลับ</ThemedText>
+          </Pressable>
+          <ThemedText type="smallBold" style={styles.headerTitle}>
+            {product ? 'แก้ไขสินค้า (Edit Product)' : 'เพิ่มสินค้าใหม่ (Add New Product)'}
+          </ThemedText>
+          <View style={{ width: 60 }} />
+        </View>
+
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Page Header */}
-          <ThemedView type="backgroundElement" style={styles.pageHeader}>
-            <ThemedText type="subtitle" style={styles.pageTitle}>
-              {isEditMode ? 'Edit Product' : 'Add New Product'}
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.pageSubtitle}>
-              {isEditMode
-                ? 'Update product details, specifications, and imagery'
-                : 'Fill in the details below to add a keyboard to the catalog'}
-            </ThemedText>
-          </ThemedView>
-
-          {/* Form Card */}
-          <ThemedView type="backgroundElement" style={styles.formCard}>
-            {/* Product Name */}
-            <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Product Name *</ThemedText>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="e.g., Keychron Q1 Pro Wireless"
-                placeholderTextColor={theme.textSecondary}
-                style={[
-                  styles.input,
-                  { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
-                ] as any}
-              />
-            </View>
-
-            {/* Price & Stock Row */}
-            <View style={{ flexDirection: 'row', gap: Spacing.three }}>
-              <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <ThemedText type="smallBold" style={styles.label}>Price (USD) *</ThemedText>
-                <TextInput
-                  value={price}
-                  onChangeText={setPrice}
-                  placeholder="e.g., 199.99"
-                  placeholderTextColor={theme.textSecondary}
-                  keyboardType="decimal-pad"
-                  style={[
-                    styles.input,
-                    { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
-                  ] as any}
-                />
-              </View>
-
-              <View style={[styles.fieldGroup, { flex: 1 }]}>
-                <ThemedText type="smallBold" style={styles.label}>Stock Quantity</ThemedText>
-                <TextInput
-                  value={stock}
-                  onChangeText={setStock}
-                  placeholder="e.g., 10"
-                  placeholderTextColor={theme.textSecondary}
-                  keyboardType="number-pad"
-                  style={[
-                    styles.input,
-                    { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
-                  ] as any}
-                />
-              </View>
-            </View>
-
-            {/* Location Text */}
-            <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Location / Store</ThemedText>
-              <TextInput
-                value={location}
-                onChangeText={setLocation}
-                placeholder="e.g. Warehouse A / Store Front"
-                placeholderTextColor={theme.textSecondary}
-                style={[
-                  styles.input,
-                  { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
-                ] as any}
-              />
-            </View>
-
-            {/* Image Upload */}
-            <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Product Image</ThemedText>
-
-              {imagePreview ? (
-                <View style={styles.imagePreviewContainer}>
-                  <Image
-                    source={{ uri: imagePreview }}
-                    style={styles.imagePreview}
-                    resizeMode="cover"
-                  />
-                  {uploading && (
-                    <View style={styles.uploadingOverlay}>
-                      <ActivityIndicator size="large" color="#ffffff" />
-                      <ThemedText type="small" style={{ color: '#ffffff', marginTop: 8 }}>Uploading...</ThemedText>
-                    </View>
-                  )}
-                  {!uploading && (
-                    <View style={styles.imageActions}>
-                      <Pressable
-                        onPress={pickImage}
-                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#3c8527' }, pressed && styles.pressed]}
-                      >
-                        <SymbolView tintColor="#fff" name={{ ios: 'arrow.triangle.2.circlepath', android: 'refresh', web: 'refresh' }} size={14} />
-                        <ThemedText type="small" style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Change</ThemedText>
-                      </Pressable>
-                      <Pressable
-                        onPress={removeImage}
-                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#ff605e' }, pressed && styles.pressed]}
-                      >
-                        <SymbolView tintColor="#fff" name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={14} />
-                        <ThemedText type="small" style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Remove</ThemedText>
-                      </Pressable>
-                    </View>
-                  )}
-                </View>
-              ) : (
-                <Pressable
-                  onPress={pickImage}
-                  style={({ pressed }) => [
-                    styles.uploadPlaceholder,
-                    { borderColor: theme.backgroundSelected, backgroundColor: theme.background },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <View style={[styles.uploadIcon, { backgroundColor: 'rgba(108,195,73,0.12)' }]}>
-                    <SymbolView
-                      tintColor="#6cc349"
-                      name={{ ios: 'photo.badge.plus', android: 'add_photo_alternate', web: 'add_photo_alternate' }}
-                      size={28}
-                    />
-                  </View>
-                  <ThemedText type="smallBold" style={{ color: '#6cc349', fontSize: 14 }}>Select Image</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
-                    Tap to upload product photo
-                  </ThemedText>
-                </Pressable>
-              )}
-            </View>
-
-            {/* Category Picker */}
-            <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Category</ThemedText>
-              <View style={styles.categoryChips}>
-                {CATEGORIES.map((cat) => {
-                  const isSelected = selectedCategory === cat;
-                  return (
-                    <Pressable
-                      key={cat}
-                      onPress={() => setSelectedCategory(cat)}
-                      style={({ pressed }) => [
-                        styles.chip,
-                        {
-                        backgroundColor: isSelected ? '#3c8527' : theme.backgroundSelected,
-                        },
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <ThemedText
-                        type="small"
-                        style={[
-                          styles.chipText,
-                          { color: isSelected ? '#ffffff' : theme.text },
-                        ]}
-                      >
-                        {cat}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Rating */}
-            <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Rating</ThemedText>
-              <StarRating value={rating} onChange={setRating} />
-            </View>
-
-            {/* Description */}
-            <View style={styles.fieldGroup}>
-              <ThemedText type="smallBold" style={styles.label}>Description</ThemedText>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Describe your product..."
-                placeholderTextColor={theme.textSecondary}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  { color: theme.text, borderColor: theme.backgroundSelected, backgroundColor: theme.background },
-                ] as any}
-              />
-            </View>
-
-            {/* Submit Button */}
-            <Pressable
-              onPress={handleSubmit}
-              disabled={loading || uploading}
-              style={({ pressed }) => [
-                styles.submitButton,
-                pressed && styles.submitPressed,
-                (loading || uploading) && { opacity: 0.6 },
-              ] as any}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" size="small" />
-              ) : (
-                <>
-                  <SymbolView
-                    tintColor="#ffffff"
-                    name={{ ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' } as any}
-                    size={18}
-                  />
-                  <ThemedText type="smallBold" style={styles.submitText as any}>
-                    {isEditMode ? 'Update Product' : 'Add Product'}
-                  </ThemedText>
-                </>
-              )}
-            </Pressable>
-          </ThemedView>
+          <ProductForm
+            initialData={product}
+            isEditMode={!!product}
+            onSubmit={handleSaveProduct}
+            onCancel={handleCancelAction}
+            loading={submitting}
+          />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -482,153 +165,40 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1 },
-  scrollView: { flex: 1 },
-  scrollContent: {
-    alignItems: 'center',
-    paddingBottom: BottomTabInset + Spacing.four,
-  },
-  pageHeader: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.six,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#3d3938',
-    borderLeftWidth: 4,
-    borderLeftColor: '#6cc349',
-    marginTop: Spacing.three,
-    marginBottom: Spacing.four,
-    gap: Spacing.two,
-    ...Platform.select({
-      web: {
-        width: `calc(100% - ${Spacing.four * 2}px)` as any,
-      },
-    }),
-  },
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    lineHeight: 26,
-    color: '#ffffff',
-    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
-  },
-  pageSubtitle: { maxWidth: 500, color: '#d0c5c0' },
-  formCard: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    marginHorizontal: Spacing.four,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    padding: Spacing.four,
-    gap: Spacing.four,
-    ...Platform.select({
-      web: { width: `calc(100% - ${Spacing.four * 2}px)` as any },
-    }),
-  },
-  fieldGroup: { gap: Spacing.two },
-  label: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: '#d0c5c0',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#898481',
-    borderRadius: 0,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two + 4,
-    fontSize: 15,
-    backgroundColor: '#262423',
-    color: '#ede5e2',
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none' as any,
-        fontFamily: 'var(--font-sans)',
-      },
-    }),
-  },
-  textArea: { minHeight: 100, paddingTop: Spacing.two + 4 },
-  uploadPlaceholder: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: 0,
-    paddingVertical: Spacing.five,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    borderColor: '#6cc349',
-    backgroundColor: 'rgba(108,195,73,0.04)',
-  },
-  uploadIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.one,
-    backgroundColor: 'rgba(108,195,73,0.12)',
-  },
-  imagePreviewContainer: {
-    borderRadius: 0,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#3d3938',
-  },
-  imagePreview: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#1d1e1e',
-  },
-  uploadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    padding: Spacing.two,
-  },
-  imageActionBtn: {
+  container: {
     flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#262423',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(128, 128, 128, 0.15)',
   },
-  categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  chip: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one + 2,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-  },
-  chipText: { fontSize: 13, fontWeight: '700' },
-  pressed: { opacity: 0.7 },
-  submitButton: {
-    backgroundColor: '#3c8527',           // vanilla-green-5 primary button
+  backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingVertical: 15,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#262423',
-    marginTop: Spacing.two,
+    gap: 4,
   },
-  submitPressed: { opacity: 0.85 },
-  submitText: { color: '#ffffff', fontSize: 15, fontWeight: '800', letterSpacing: 0.54 },
+  headerTitle: {
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    alignSelf: 'center',
+    padding: Spacing.four,
+    paddingBottom: BottomTabInset + Spacing.six,
+  },
+  pressed: {
+    opacity: 0.7,
+  },
 });
-

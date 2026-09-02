@@ -1,397 +1,362 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+/**
+ * @file price-range-filter.tsx
+ * @description คอมโพเนนต์ตัวกรองช่วงราคาแบบ Dual Slider (Min-Max)
+ * รองรับทั้งการลากบน Web (Pointer Events 60 FPS) และ Mobile (PanResponder) พร้อมช่องกรอกตัวเลขแบบ Manual
+ */
+
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
+  StyleSheet,
   View,
   TextInput,
-  StyleSheet,
+  Pressable,
   PanResponder,
   Platform,
-  Pressable,
+  LayoutChangeEvent,
 } from 'react-native';
-import { ThemedText } from './themed-text';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export interface PriceRangeFilterProps {
-  absoluteMin?: number;
-  absoluteMax?: number;
+  /** ค่าต่ำสุดที่เป็นไปได้ของสินค้าทั้งหมด */
+  absoluteMin: number;
+  /** ค่าสูงสุดที่เป็นไปได้ของสินค้าทั้งหมด */
+  absoluteMax: number;
+  /** ราคาต่ำสุดที่เลือกอยู่ */
   minPrice: number;
+  /** ราคาสูงสุดที่เลือกอยู่ */
   maxPrice: number;
+  /** ฟังก์ชัน Callback เมื่อช่วงราคาเปลี่ยนแปลง */
   onPriceChange: (min: number, max: number) => void;
-  title?: string;
-  currencySymbol?: string;
+  /** ฟังก์ชันรีเซ็ตช่วงราคา */
+  onReset?: () => void;
 }
 
-const VISUAL_HANDLE_SIZE = 18;
-const TOUCH_TARGET_SIZE = 36;
-const TRACK_HEIGHT = 4;
+const THUMB_SIZE = 22;
 
 export function PriceRangeFilter({
-  absoluteMin = 0,
-  absoluteMax = 10000,
+  absoluteMin,
+  absoluteMax,
   minPrice,
   maxPrice,
   onPriceChange,
-  title = 'ช่วงราคา',
+  onReset,
 }: PriceRangeFilterProps) {
-  // Measured track width
+  const theme = useTheme();
+
   const [trackWidth, setTrackWidth] = useState<number>(0);
   const trackRef = useRef<View>(null);
 
-  // Local text input states for fluid typing
-  const [minText, setMinText] = useState<string>(String(minPrice));
-  const [maxText, setMaxText] = useState<string>(String(maxPrice));
+  // การจัดการ TextInput แบบ Controlled/Uncontrolled ที่ปลอดภัยโดยไม่ต้องใช้ useEffect
+  const [minInput, setMinInput] = useState<string | null>(null);
+  const [maxInput, setMaxInput] = useState<string | null>(null);
 
-  // Keep latest values in refs to prevent recreate and closure staleness
-  const absMinRef = useRef(absoluteMin);
-  const absMaxRef = useRef(absoluteMax);
-  const minPriceRef = useRef(minPrice);
-  const maxPriceRef = useRef(maxPrice);
-  const trackWidthRef = useRef(trackWidth);
-  const onPriceChangeRef = useRef(onPriceChange);
-
-  absMinRef.current = absoluteMin;
-  absMaxRef.current = absoluteMax;
-  minPriceRef.current = minPrice;
-  maxPriceRef.current = maxPrice;
-  trackWidthRef.current = trackWidth;
-  onPriceChangeRef.current = onPriceChange;
-
-  // Sync inputs with props
-  useEffect(() => {
-    setMinText(String(minPrice));
-  }, [minPrice]);
-
-  useEffect(() => {
-    setMaxText(String(maxPrice));
-  }, [maxPrice]);
+  const displayMin = minInput !== null ? minInput : String(minPrice);
+  const displayMax = maxInput !== null ? maxInput : String(maxPrice);
 
   const rangeSpan = Math.max(1, absoluteMax - absoluteMin);
 
-  // Calculate percentage & position safely
+  // คำนวณเปอร์เซ็นต์และตำแหน่งของ Thumb บนแทร็ก
   const minPercent = Math.max(0, Math.min(1, (minPrice - absoluteMin) / rangeSpan));
   const maxPercent = Math.max(0, Math.min(1, (maxPrice - absoluteMin) / rangeSpan));
 
   const minPos = trackWidth > 0 ? minPercent * trackWidth : 0;
   const maxPos = trackWidth > 0 ? maxPercent * trackWidth : 0;
 
-  // Fluid update handler with clamping
-  const updateRange = useCallback((newMin: number, newMax: number) => {
-    const clampedMin = Math.max(absMinRef.current, Math.min(newMin, newMax));
-    const clampedMax = Math.min(absMaxRef.current, Math.max(newMax, clampedMin));
+  // ฟังก์ชันอัปเดตช่วงราคาพร้อม Clamping ขอบเขต
+  const updateRange = useCallback(
+    (newMin: number, newMax: number) => {
+      const clampedMin = Math.max(absoluteMin, Math.min(newMin, newMax));
+      const clampedMax = Math.min(absoluteMax, Math.max(newMax, clampedMin));
+      onPriceChange(clampedMin, clampedMax);
+    },
+    [absoluteMin, absoluteMax, onPriceChange]
+  );
 
-    setMinText(String(clampedMin));
-    setMaxText(String(clampedMax));
-    onPriceChangeRef.current(clampedMin, clampedMax);
-  }, []);
+  // รองรับการลากบน Web (Pointer Events)
+  const handleWebPointerDown = useCallback(
+    (type: 'min' | 'max') => (e: any) => {
+      if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+      e.preventDefault();
+      e.stopPropagation();
 
-  // Web Pointer Dragging (60 FPS, global window tracking, no dropped gestures)
-  const handleWebPointerDown = (type: 'min' | 'max') => (e: any) => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
-    e.preventDefault();
-    e.stopPropagation();
+      const trackElement = trackRef.current as any;
+      if (!trackElement || !trackElement.getBoundingClientRect) return;
 
-    const trackElement = trackRef.current as any;
-    if (!trackElement || !trackElement.getBoundingClientRect) return;
+      const getPositionValue = (clientX: number) => {
+        const rect = trackElement.getBoundingClientRect();
+        const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width));
+        const ratio = rect.width > 0 ? relativeX / rect.width : 0;
+        return Math.round(absoluteMin + ratio * (absoluteMax - absoluteMin));
+      };
 
-    const getPositionValue = (clientX: number) => {
-      const rect = trackElement.getBoundingClientRect();
-      const relativeX = Math.max(0, Math.min(clientX - rect.left, rect.width));
-      const ratio = rect.width > 0 ? relativeX / rect.width : 0;
-      return Math.round(absMinRef.current + ratio * (absMaxRef.current - absMinRef.current));
-    };
+      const onPointerMove = (moveEvent: MouseEvent | PointerEvent) => {
+        const currentVal = getPositionValue(moveEvent.clientX);
+        if (type === 'min') {
+          updateRange(Math.min(currentVal, maxPrice), maxPrice);
+        } else {
+          updateRange(minPrice, Math.max(currentVal, minPrice));
+        }
+      };
 
-    const onPointerMove = (moveEvent: MouseEvent | PointerEvent) => {
-      const currentVal = getPositionValue(moveEvent.clientX);
-      if (type === 'min') {
-        updateRange(Math.min(currentVal, maxPriceRef.current), maxPriceRef.current);
-      } else {
-        updateRange(minPriceRef.current, Math.max(currentVal, minPriceRef.current));
-      }
-    };
+      const onPointerUp = () => {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+      };
 
-    const onPointerUp = () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('mousemove', onPointerMove);
-      window.removeEventListener('mouseup', onPointerUp);
-    };
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('mousemove', onPointerMove, { passive: false });
+      window.addEventListener('mouseup', onPointerUp);
+    },
+    [absoluteMin, absoluteMax, minPrice, maxPrice, updateRange]
+  );
 
-    window.addEventListener('pointermove', onPointerMove, { passive: false });
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('mousemove', onPointerMove, { passive: false });
-    window.addEventListener('mouseup', onPointerUp);
-  };
-
-  // Mobile PanResponder for Min Handle (Left)
+  // Mobile PanResponder สำหรับ Min Handle (Left)
   const minPanResponder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {},
         onPanResponderMove: (_, gestureState) => {
-          if (trackWidthRef.current <= 0) return;
-          const currentPercent = (minPriceRef.current - absMinRef.current) / (absMaxRef.current - absMinRef.current);
-          const currentPx = currentPercent * trackWidthRef.current;
-          const targetPx = Math.max(0, Math.min(currentPx + gestureState.dx, trackWidthRef.current));
-          const newRatio = targetPx / trackWidthRef.current;
-          const newVal = Math.round(absMinRef.current + newRatio * (absMaxRef.current - absMinRef.current));
-          updateRange(Math.min(newVal, maxPriceRef.current), maxPriceRef.current);
+          if (trackWidth <= 0) return;
+          const currentPercent = (minPrice - absoluteMin) / (absoluteMax - absoluteMin);
+          const currentPx = currentPercent * trackWidth;
+          const targetPx = Math.max(0, Math.min(currentPx + gestureState.dx, trackWidth));
+          const newRatio = targetPx / trackWidth;
+          const newVal = Math.round(absoluteMin + newRatio * (absoluteMax - absoluteMin));
+          updateRange(Math.min(newVal, maxPrice), maxPrice);
         },
       }),
-    [updateRange]
+    [absoluteMin, absoluteMax, minPrice, maxPrice, trackWidth, updateRange]
   );
 
-  // Mobile PanResponder for Max Handle (Right)
+  // Mobile PanResponder สำหรับ Max Handle (Right)
   const maxPanResponder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {},
         onPanResponderMove: (_, gestureState) => {
-          if (trackWidthRef.current <= 0) return;
-          const currentPercent = (maxPriceRef.current - absMinRef.current) / (absMaxRef.current - absMinRef.current);
-          const currentPx = currentPercent * trackWidthRef.current;
-          const targetPx = Math.max(0, Math.min(currentPx + gestureState.dx, trackWidthRef.current));
-          const newRatio = targetPx / trackWidthRef.current;
-          const newVal = Math.round(absMinRef.current + newRatio * (absMaxRef.current - absMinRef.current));
-          updateRange(minPriceRef.current, Math.max(newVal, minPriceRef.current));
+          if (trackWidth <= 0) return;
+          const currentPercent = (maxPrice - absoluteMin) / (absoluteMax - absoluteMin);
+          const currentPx = currentPercent * trackWidth;
+          const targetPx = Math.max(0, Math.min(currentPx + gestureState.dx, trackWidth));
+          const newRatio = targetPx / trackWidth;
+          const newVal = Math.round(absoluteMin + newRatio * (absoluteMax - absoluteMin));
+          updateRange(minPrice, Math.max(newVal, minPrice));
         },
       }),
-    [updateRange]
+    [absoluteMin, absoluteMax, minPrice, maxPrice, trackWidth, updateRange]
   );
 
-  // Commit text input values on blur or enter
-  const commitMinInput = () => {
-    let parsed = parseFloat(minText.replace(/[^0-9.]/g, ''));
-    if (isNaN(parsed)) parsed = absoluteMin;
-    updateRange(parsed, maxPrice);
+  // การจัดการเมื่อผู้ใช้กด Submit ในช่อง TextInput
+  const handleMinSubmit = () => {
+    if (minInput !== null) {
+      const parsed = parseFloat(minInput);
+      if (!isNaN(parsed)) {
+        updateRange(parsed, maxPrice);
+      }
+      setMinInput(null);
+    }
   };
 
-  const commitMaxInput = () => {
-    let parsed = parseFloat(maxText.replace(/[^0-9.]/g, ''));
-    if (isNaN(parsed)) parsed = absoluteMax;
-    updateRange(minPrice, parsed);
+  const handleMaxSubmit = () => {
+    if (maxInput !== null) {
+      const parsed = parseFloat(maxInput);
+      if (!isNaN(parsed)) {
+        updateRange(minPrice, parsed);
+      }
+      setMaxInput(null);
+    }
   };
 
-  // Tap anywhere on track to move closest handle
-  const handleTrackPress = (e: any) => {
-    const clickX = e.nativeEvent.locationX;
-    const distToMin = Math.abs(clickX - minPos);
-    const distToMax = Math.abs(clickX - maxPos);
-    const ratio = trackWidth > 0 ? Math.max(0, Math.min(1, clickX / trackWidth)) : 0;
-    const clickedVal = Math.round(absoluteMin + ratio * rangeSpan);
-
-    if (distToMin <= distToMax) {
-      updateRange(clickedVal, maxPrice);
-    } else {
-      updateRange(minPrice, clickedVal);
+  const onTrackLayout = (event: LayoutChangeEvent) => {
+    const w = event.nativeEvent.layout.width;
+    if (w > 0 && Math.abs(w - trackWidth) > 1) {
+      setTrackWidth(w);
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Title */}
-      <ThemedText type="smallBold" style={styles.title}>
-        {title}
-      </ThemedText>
-
-      {/* Two Inputs Row: [ Min ] - [ Max ] */}
-      <View style={styles.inputsRow}>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            value={minText}
-            onChangeText={setMinText}
-            onBlur={commitMinInput}
-            onSubmitEditing={commitMinInput}
-            keyboardType="numeric"
-            placeholder={String(absoluteMin)}
-            placeholderTextColor="#898481"
-            style={styles.input}
-          />
-        </View>
-
-        <ThemedText style={styles.dashText}>-</ThemedText>
-
-        <View style={styles.inputWrapper}>
-          <TextInput
-            value={maxText}
-            onChangeText={setMaxText}
-            onBlur={commitMaxInput}
-            onSubmitEditing={commitMaxInput}
-            keyboardType="numeric"
-            placeholder={String(absoluteMax)}
-            placeholderTextColor="#898481"
-            style={styles.input}
-          />
-        </View>
+    <ThemedView type="backgroundElement" style={styles.card}>
+      <View style={styles.headerRow}>
+        <ThemedText type="smallBold" style={styles.title}>
+          ตัวกรองช่วงราคา (Price Range)
+        </ThemedText>
+        {onReset && (
+          <Pressable onPress={onReset} hitSlop={8}>
+            <ThemedText type="small" style={{ color: '#FF3B30', fontSize: 12 }}>
+              รีเซ็ต
+            </ThemedText>
+          </Pressable>
+        )}
       </View>
 
-      {/* Range Slider Track Area */}
-      <View
-        ref={trackRef}
-        style={styles.sliderContainer}
-        onLayout={(e) => {
-          const w = e.nativeEvent.layout.width;
-          if (w > 0) setTrackWidth(w);
-        }}
-      >
-        {/* Inactive Background Track (tappable) */}
-        <Pressable onPress={handleTrackPress} style={styles.trackBackground}>
-          {/* Active Highlighted Range Track */}
+      {/* แทร็กสไลเดอร์ */}
+      <View style={styles.sliderContainer}>
+        <View ref={trackRef} onLayout={onTrackLayout} style={[styles.trackBg, { backgroundColor: theme.border }]}>
+          {/* แถบไฮไลต์ช่วงที่เลือก */}
           <View
             style={[
-              styles.trackActive,
+              styles.trackHighlight,
               {
-                left: Math.max(0, minPos),
+                left: minPos,
                 width: Math.max(0, maxPos - minPos),
+                backgroundColor: '#6cc349',
               },
             ]}
           />
-        </Pressable>
+        </View>
 
-        {/* Min Handle (Left) with large transparent hit box */}
+        {/* ปุ่มลากต่ำสุด (Min Thumb) */}
         <View
           {...minPanResponder.panHandlers}
-          {...(Platform.OS === 'web' ? { onPointerDown: handleWebPointerDown('min') } : {})}
+          onPointerDown={handleWebPointerDown('min')}
           style={[
-            styles.touchTarget,
+            styles.thumb,
             {
-              left: Math.max(0, Math.min(minPos - TOUCH_TARGET_SIZE / 2, trackWidth - TOUCH_TARGET_SIZE)),
+              left: minPos - THUMB_SIZE / 2,
+              backgroundColor: '#ffffff',
+              borderColor: '#6cc349',
             },
           ]}
-        >
-          <View style={styles.visualHandle}>
-            <View style={styles.handleInnerDot} />
-          </View>
-        </View>
+        />
 
-        {/* Max Handle (Right) with large transparent hit box */}
+        {/* ปุ่มลากสูงสุด (Max Thumb) */}
         <View
           {...maxPanResponder.panHandlers}
-          {...(Platform.OS === 'web' ? { onPointerDown: handleWebPointerDown('max') } : {})}
+          onPointerDown={handleWebPointerDown('max')}
           style={[
-            styles.touchTarget,
+            styles.thumb,
             {
-              left: Math.max(0, Math.min(maxPos - TOUCH_TARGET_SIZE / 2, trackWidth - TOUCH_TARGET_SIZE)),
+              left: maxPos - THUMB_SIZE / 2,
+              backgroundColor: '#ffffff',
+              borderColor: '#6cc349',
             },
           ]}
-        >
-          <View style={styles.visualHandle}>
-            <View style={styles.handleInnerDot} />
-          </View>
+        />
+      </View>
+
+      {/* ช่องกรอกตัวเลข Min และ Max */}
+      <View style={styles.inputsRow}>
+        <View style={styles.inputCol}>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+            ต่ำสุด ($)
+          </ThemedText>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.background,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            value={displayMin}
+            onChangeText={setMinInput}
+            onBlur={handleMinSubmit}
+            onSubmitEditing={handleMinSubmit}
+            keyboardType="decimal-pad"
+          />
+        </View>
+
+        <ThemedText type="small" themeColor="textSecondary" style={styles.hyphen}>
+          -
+        </ThemedText>
+
+        <View style={styles.inputCol}>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+            สูงสุด ($)
+          </ThemedText>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.background,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            value={displayMax}
+            onChangeText={setMaxInput}
+            onBlur={handleMaxSubmit}
+            onSubmitEditing={handleMaxSubmit}
+            keyboardType="decimal-pad"
+          />
         </View>
       </View>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    paddingVertical: Spacing.one,
-    gap: Spacing.two,
+  card: {
+    padding: Spacing.three,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(128, 128, 128, 0.15)',
+    gap: Spacing.three,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ede5e2',
-    letterSpacing: 0.5,
+    fontSize: 13,
+  },
+  sliderContainer: {
+    height: 36,
+    justifyContent: 'center',
+    position: 'relative',
+    marginHorizontal: THUMB_SIZE / 2,
+  },
+  trackBg: {
+    height: 4,
+    borderRadius: 2,
+    position: 'relative',
+  },
+  trackHighlight: {
+    height: 4,
+    position: 'absolute',
+    borderRadius: 2,
+  },
+  thumb: {
+    position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   inputsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  inputWrapper: {
+  inputCol: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#3d3938',               // surface-dark-soft
-    borderRadius: 6,                      // matching user's rounded box in screenshot
-    backgroundColor: '#262423',           // surface-mid
-    height: 40,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
+    gap: 2,
   },
   input: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#ede5e2',
-    padding: 0,
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none' as any,
-        fontFamily: 'var(--font-sans)',
-      },
-    }),
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 13,
   },
-  dashText: {
+  hyphen: {
+    paddingTop: 14,
     fontSize: 16,
-    fontWeight: '700',
-    color: '#898481',
-    paddingHorizontal: 2,
-  },
-  sliderContainer: {
-    width: '100%',
-    height: 36,
-    justifyContent: 'center',
-    position: 'relative',
-    marginTop: 6,
-    ...Platform.select({
-      web: {
-        userSelect: 'none',
-        touchAction: 'none',
-      } as any,
-    }),
-  },
-  trackBackground: {
-    width: '100%',
-    height: TRACK_HEIGHT,
-    backgroundColor: '#3d3938',           // Inactive track
-    borderRadius: 2,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  trackActive: {
-    height: TRACK_HEIGHT,
-    backgroundColor: '#ff7675',           // Matching user image coral/salmon active line
-    borderRadius: 2,
-    position: 'absolute',
-    top: 0,
-  },
-  touchTarget: {
-    position: 'absolute',
-    top: 36 / 2 - TOUCH_TARGET_SIZE / 2,
-    width: TOUCH_TARGET_SIZE,
-    height: TOUCH_TARGET_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-    ...Platform.select({
-      web: {
-        cursor: 'grab',
-      } as any,
-    }),
-  },
-  visualHandle: {
-    width: VISUAL_HANDLE_SIZE,
-    height: VISUAL_HANDLE_SIZE,
-    borderRadius: VISUAL_HANDLE_SIZE / 2,
-    borderWidth: 2.5,
-    borderColor: '#ff7675',               // Coral circle ring as in user image
-    backgroundColor: '#ffffff',           // White center
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
-      } as any,
-    }),
-  },
-  handleInnerDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#ff7675',
   },
 });

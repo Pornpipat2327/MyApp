@@ -1,12 +1,22 @@
-﻿import React, { useState } from 'react';
+/**
+ * @file star-rating.tsx
+ * @description คอมโพเนนต์แสดงผลและเลือกคะแนนดาว (Star Rating) รองรับการ Hover บนเว็บและการสัมผัสบน Mobile
+ */
+
+import React, { useState } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 
 interface StarRatingProps {
+  /** ค่าคะแนนปัจจุบัน (1 - 5) */
   value: number;
+  /** ฟังก์ชัน Callback เมื่อมีการเปลี่ยนคะแนนดาว */
   onChange: (rating: number) => void;
+  /** ขนาดฟอนต์ของดาว (ค่าเริ่มต้น 28) */
   size?: number;
+  /** สีของดาวที่เลือก (ค่าเริ่มต้น สีเหลืองทอง #FFCC00) */
   color?: string;
+  /** สีของดาวที่ไม่ได้เลือก (ค่าเริ่มต้น สีเทา #D1D1D6) */
   emptyColor?: string;
 }
 
@@ -45,7 +55,7 @@ export function StarRating({
         ))}
       </View>
       <ThemedText type="smallBold" style={styles.label}>
-        {value.toFixed(1)} / 5
+        {value.toFixed(1)} / 5.0
       </ThemedText>
     </View>
   );
@@ -64,12 +74,14 @@ const styles = StyleSheet.create({
   starBtn: {
     padding: 2,
   },
-  pressed: { opacity: 0.6 },
+  pressed: {
+    opacity: 0.6,
+  },
   star: {
     lineHeight: undefined,
   },
   label: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

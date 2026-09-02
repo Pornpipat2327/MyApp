@@ -1,8 +1,12 @@
+/**
+ * @file app-tabs.tsx
+ * @description เมนูแท็บนำทางหลัก (Native Tabs Navigator) สำหรับแพลตฟอร์ม iOS และ Android
+ */
+
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Platform, useColorScheme } from 'react-native';
-
 import { Colors } from '@/constants/theme';
 
 export default function AppTabs() {
@@ -21,7 +25,9 @@ export default function AppTabs() {
             const role = (userObj?.role ?? '').toLowerCase();
             setIsAdmin(role === 'admin');
             return;
-          } catch (e) {}
+          } catch {
+            // ไม่สามารถแปลง JSON ได้
+          }
         }
         setIsAdmin(false);
       }
@@ -43,7 +49,8 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      labelStyle={{ selected: { color: colors.text } }}
+    >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -82,7 +89,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      {/* Hidden screens — not shown in tab bar but registered for navigation */}
+      {/* หน้าที่ไม่ได้แสดงในแท็บบาร์ แต่ลงทะเบียนไว้เพื่อการนำทาง */}
       {!isAdmin && (
         <NativeTabs.Trigger name="add">
           <NativeTabs.Trigger.Label>Add</NativeTabs.Trigger.Label>
@@ -115,4 +122,3 @@ export default function AppTabs() {
     </NativeTabs>
   );
 }
-

@@ -18,6 +18,7 @@ export const Colors = {
     backgroundElement: '#1d1e1e', // surface-dark
     backgroundSelected: '#3d3938',// surface-dark-soft
     textSecondary: '#d0c5c0',     // grey-2
+    border: '#3d3938',            // surface border divider
   },
   dark: {
     text: '#ffffff',              // off-white
@@ -25,6 +26,7 @@ export const Colors = {
     backgroundElement: '#1d1e1e', // surface-dark
     backgroundSelected: '#3d3938',// surface-dark-soft
     textSecondary: '#d0c5c0',     // grey-2
+    border: '#3d3938',            // surface border divider
   },
 } as const;
 

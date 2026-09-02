@@ -1,3 +1,8 @@
+/**
+ * @file app-tabs.web.tsx
+ * @description เมนูแท็บนำทางหลัก (Web Bottom Navigation Bar) สไตล์ Voxel/Minecraft สำหรับหน้าจอ Web
+ */
+
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'expo-router';
 import {
@@ -9,12 +14,11 @@ import {
   TabTriggerSlotProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
 export default function AppTabs() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -30,8 +34,8 @@ export default function AppTabs() {
             const role = (userObj?.role ?? '').toLowerCase();
             setIsAdmin(role === 'admin');
             return;
-          } catch (e) {
-            // ignore parse error
+          } catch {
+            // ไม่สามารถแปลง JSON ได้
           }
         }
         setIsAdmin(false);
@@ -71,7 +75,8 @@ export default function AppTabs() {
           <TabTrigger name="categories" href="/categories" asChild>
             <TabButton iconName="category">Categories</TabButton>
           </TabTrigger>
-          {/* Hidden screens — registered for navigation but not shown in tab bar */}
+
+          {/* หน้าที่ซ่อนจากแท็บบาร์ แต่ลงทะเบียนไว้เพื่อการนำทาง */}
           <TabTrigger name="cart" href="/cart" style={{ display: 'none' }} />
           <TabTrigger name="checkout" href="/checkout" style={{ display: 'none' }} />
           <TabTrigger name="orders" href="/orders" style={{ display: 'none' }} />
@@ -98,7 +103,6 @@ const ICON_MAP: Record<string, { ios: string; web: string }> = {
 export function TabButton({ children, isFocused, iconName, ...props }: CustomTabButtonProps) {
   const icon = ICON_MAP[iconName] ?? { ios: iconName, web: iconName };
 
-  // Minecraft active: vanilla-green-3 / inactive: grey-2
   const activeTint = '#6cc349';
   const inactiveTint = '#d0c5c0';
 
@@ -106,7 +110,8 @@ export function TabButton({ children, isFocused, iconName, ...props }: CustomTab
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
+        style={styles.tabButtonView}
+      >
         <SymbolView
           tintColor={isFocused ? activeTint : inactiveTint}
           name={{ ios: icon.ios, web: icon.web } as any}
@@ -142,13 +147,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     zIndex: 100,
     borderTopWidth: 2,
-    borderTopColor: '#3d3938',            // surface-dark-soft divider
-    backgroundColor: '#1d1e1e',           // surface-dark — full-width bar
+    borderTopColor: '#3d3938',
+    backgroundColor: '#1d1e1e',
   } as any,
   innerContainer: {
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
-    borderRadius: 0,                      // 0px — voxel doctrine (no pill)
+    borderRadius: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -165,6 +170,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
-    borderRadius: 0,                      // 0px — voxel doctrine
+    borderRadius: 0,
   },
 });

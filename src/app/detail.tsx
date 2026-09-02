@@ -1,36 +1,34 @@
-﻿import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
-import { BottomTabInset, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useCart } from '@/hooks/use-cart';
-import { SymbolView } from 'expo-symbols';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+/**
+ * @file detail.tsx
+ * @description หน้ารายละเอียดสินค้า (Product Detail Screen)
+ * ประกอบด้วยรูปภาพขนาดใหญ่, รายละเอียดสเปก, ตัวปรับจำนวน, ปุ่มเพิ่มลงตะกร้า และปุ่มจัดการสินค้าสำหรับ Admin
+ */
+
+import React, { useState, useCallback } from 'react';
 import {
+  StyleSheet,
+  ScrollView,
+  View,
   ActivityIndicator,
   Alert,
-  Image,
   Platform,
   Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface ProductDetail {
-  id: string | number;
-  name: string;
-  category?: string;
-  price: string | number;
-  rating?: string | number;
-  description?: string;
-  image?: string;
-  stock?: string | number;
-  location_text?: string;
-}
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { TopHeader } from '@/components/top-header';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { useCart } from '@/hooks/use-cart';
+import { getProductsApiUrl } from '@/constants/api';
+import { Product } from '@/types/product';
+import { ProductImageViewer } from '@/components/detail/product-image-viewer';
+import { ProductInfoSection } from '@/components/detail/product-info-section';
+import { ProductActionBar } from '@/components/detail/product-action-bar';
+import { isCurrentUserAdmin } from '@/utils/storage';
 
 export default function ProductDetailScreen() {
   const theme = useTheme();
@@ -38,35 +36,29 @@ export default function ProductDetailScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const { addToCart } = useCart();
 
-  const [product, setProduct] = useState<ProductDetail | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
-  // Re-check role AND re-fetch product every time this screen is focused
+  // ดึงข้อมูลสินค้าและสิทธิ์ Admin เมื่อเข้าสู่หน้านี้
   useFocusEffect(
     useCallback(() => {
-      // 1. Auth check
+      // 1. ตรวจสอบสถานะการเข้าสู่ระบบ
       if (Platform.OS === 'web') {
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           router.replace('/login' as any);
           return;
         }
-        try {
-          const userObj = JSON.parse(userStr);
-          const role: string = (userObj?.role ?? '').toLowerCase();
-          setIsAdmin(role === 'admin');
-        } catch {
-          setIsAdmin(false);
-        }
+        setIsAdmin(isCurrentUserAdmin());
       }
 
-      // 2. Fetch fresh product data
+      // 2. ตรวจสอบ ID สินค้า
       if (!params.id) {
-        setError('No product ID provided.');
+        setError('ไม่พบรหัสสินค้าที่ต้องการแสดง');
         setLoading(false);
         return;
       }
@@ -79,7 +71,7 @@ export default function ProductDetailScreen() {
         .then((resData) => {
           const d = resData?.data ?? resData;
           if (!d || (!d.id && !d.Product_ID && !d.name && !d.Name)) {
-            throw new Error('Product not found');
+            throw new Error('ไม่พบข้อมูลสินค้าชิ้นนี้ในระบบ');
           }
           setProduct({
             id: d.Product_ID ?? d.id ?? params.id!,
@@ -90,21 +82,54 @@ export default function ProductDetailScreen() {
             description: d.Description ?? d.description ?? '',
             image: d.image ?? d.Image ?? d.image_url ?? '',
             stock: d.Stock ?? d.stock ?? 0,
-            location_text: d.Location ?? d.location ?? d.location_text ?? '',
+            location: d.Location ?? d.location ?? d.location_text ?? '',
           });
         })
         .catch((err) => {
-          setError(err instanceof Error ? err.message : 'Failed to load product');
+          setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการโหลดสินค้า');
         })
         .finally(() => {
           setLoading(false);
         });
-    }, [params.id])
+    }, [params.id, router])
   );
 
-  // (Removed separate useEffect for fetch — now handled in useFocusEffect above)
+  /**
+   * เพิ่มสินค้าลงในตะกร้าพร้อม Feedback แสดงผล
+   */
+  const handleAddToCart = () => {
+    if (!product) return;
+    addToCart(product, quantity);
+    setAddedSuccess(true);
+    setTimeout(() => {
+      setAddedSuccess(false);
+    }, 1800);
+  };
 
+  /**
+   * นำทางไปยังหน้าแก้ไขสินค้า
+   */
+  const handleEdit = () => {
+    if (!product) return;
+    router.push({
+      pathname: '/edit' as any,
+      params: {
+        id: String(product.id),
+        name: product.name,
+        price: String(product.price),
+        stock: String(product.stock ?? 0),
+        category: product.category,
+        location: product.location,
+        image: product.image,
+        description: product.description,
+        rating: String(product.rating ?? 5),
+      },
+    });
+  };
 
+  /**
+   * ขอยืนยันและส่งคำขอลบสินค้า
+   */
   const handleDelete = async () => {
     if (!product) return;
 
@@ -116,105 +141,57 @@ export default function ProductDetailScreen() {
         const data = await res.json();
         if (res.ok && data.success) {
           if (Platform.OS === 'web') {
-            window.alert(`Deleted "${product.name}" successfully.`);
+            window.alert(`ลบ "${product.name}" สำเร็จเรียบร้อย`);
           } else {
-            Alert.alert('Deleted', `"${product.name}" has been removed.`);
+            Alert.alert('สำเร็จ', `ลบ "${product.name}" เรียบร้อยแล้ว`);
           }
           router.back();
         } else {
-          const msg = data.message || 'Failed to delete';
+          const msg = data.message || 'ลบสินค้าไม่สำเร็จ';
           if (Platform.OS === 'web') window.alert(msg);
-          else Alert.alert('Error', msg);
+          else Alert.alert('ข้อผิดพลาด', msg);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Network error';
+        const msg = err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
         if (Platform.OS === 'web') window.alert(msg);
-        else Alert.alert('Error', msg);
+        else Alert.alert('ข้อผิดพลาด', msg);
       }
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm(`Delete "${product.name}"?`)) doDelete();
+      if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า "${product.name}"?`)) {
+        doDelete();
+      }
     } else {
-      Alert.alert('Confirm Delete', `Delete "${product.name}"?`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      Alert.alert('ยืนยันการลบ', `คุณต้องการลบ "${product.name}" หรือไม่?`, [
+        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'ลบสินค้า', style: 'destructive', onPress: doDelete },
       ]);
     }
-  };
-
-  const formatPrice = (price: string | number) => {
-    if (typeof price === 'number') return `$${price.toFixed(2)}`;
-    if (!price) return '$0.00';
-    return String(price).startsWith('$') ? String(price) : `$${price}`;
-  };
-
-  const getImageSource = (imagePath?: string) => {
-    if (!imagePath) return null;
-    if (
-      imagePath.startsWith('http://') ||
-      imagePath.startsWith('https://') ||
-      imagePath.startsWith('data:')
-    ) {
-      return { uri: imagePath };
-    }
-    // รองรับ /uploads/ path จาก server
-    if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/')) {
-      return { uri: `${getBaseUrl()}${imagePath}` };
-    }
-    return null;
-  };
-
-  const renderStars = (rating: string | number) => {
-    const r = parseFloat(String(rating));
-    const full = Math.floor(r);
-    const empty = 5 - full;
-    return '★'.repeat(full) + '☆'.repeat(empty);
-  };
-
-  const rawStock = product?.stock;
-  const maxStock = typeof rawStock === 'number' ? rawStock : parseInt(String(rawStock ?? 99), 10) || 99;
-  const isOutOfStock = product?.stock !== undefined && product?.stock !== null && maxStock <= 0;
-
-  const handleAddToCart = () => {
-    if (!product || isOutOfStock) return;
-    addToCart(product, quantity);
-    setAddedSuccess(true);
-    setTimeout(() => {
-      setAddedSuccess(false);
-    }, 2000);
-  };
-
-  const handleBuyNow = () => {
-    if (!product || isOutOfStock) return;
-    addToCart(product, quantity);
-    router.push('/checkout' as any);
   };
 
   return (
     <ThemedView type="background" style={styles.container}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        {/* Nav Bar */}
-        <View style={[styles.navBar, { borderBottomColor: 'rgba(128,128,128,0.15)' }]}>
+        <TopHeader />
+
+        {/* แถบย้อนกลับและหัวข้อ */}
+        <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
           <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.push('/product' as any))}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            onPress={() => (router.canGoBack() ? router.back() : router.push('/product'))}
+            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
           >
             <SymbolView
               tintColor={theme.text}
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
               size={20}
             />
-            <ThemedText type="smallBold" style={styles.backText}>
-              Back
-            </ThemedText>
+            <ThemedText type="smallBold">รายการสินค้า</ThemedText>
           </Pressable>
-
-          <ThemedText type="smallBold" style={styles.navTitle} numberOfLines={1}>
-            Product Detail
+          <ThemedText type="smallBold" numberOfLines={1} style={styles.headerTitle}>
+            รายละเอียดสินค้า
           </ThemedText>
-
-          <View style={{ width: 72 }} />
+          <View style={{ width: 60 }} />
         </View>
 
         <ScrollView
@@ -222,574 +199,121 @@ export default function ProductDetailScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Loading */}
-          {loading && (
-            <View style={styles.centerState}>
-              <ActivityIndicator size="large" color={theme.text} />
-              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: Spacing.two }}>
-                Loading details...
+          {loading ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="large" color="#6cc349" />
+              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 12 }}>
+                กำลังโหลดรายละเอียดสินค้า...
               </ThemedText>
             </View>
-          )}
-
-          {/* Error */}
-          {error && !loading && (
-            <View style={styles.centerState}>
-              <SymbolView
-                tintColor="#FF3B30"
-                name={{ ios: 'exclamationmark.triangle', android: 'error', web: 'error' } as any}
-                size={48}
-              />
-              <ThemedText type="small" style={{ color: '#FF3B30', marginTop: Spacing.two, textAlign: 'center' }}>
-                {error}
-              </ThemedText>
+          ) : error ? (
+            <View style={styles.centerBox}>
+              <ThemedText style={{ color: '#FF3B30', fontSize: 16 }}>⚠️ {error}</ThemedText>
               <Pressable
-                onPress={() => router.back()}
-                style={({ pressed }) => [styles.actionBtn, { backgroundColor: '#007AFF' }, pressed && styles.pressed]}
+                onPress={() => router.push('/product')}
+                style={[styles.backStoreBtn, { backgroundColor: theme.backgroundElement }]}
               >
-                <ThemedText type="smallBold" style={styles.actionBtnText}>
-                  Go Back
-                </ThemedText>
+                <ThemedText type="smallBold">กลับไปหน้ารายการสินค้า</ThemedText>
               </Pressable>
             </View>
-          )}
+          ) : product ? (
+            <View style={styles.mainGrid}>
+              {/* รูปภาพสินค้า */}
+              <View style={styles.imageColumn}>
+                <ProductImageViewer image={product.image} category={product.category} />
+              </View>
 
-          {/* Detail Content */}
-          {!loading && !error && product && (
-            <View style={styles.detailWrapper}>
-              {/* Hero Image */}
-              {getImageSource(product.image) ? (
-                <Image
-                  source={getImageSource(product.image)!}
-                  style={styles.heroImage}
-                  resizeMode="cover"
+              {/* ข้อมูลและการสั่งซื้อ */}
+              <View style={styles.infoColumn}>
+                <ProductInfoSection
+                  name={product.name}
+                  price={product.price}
+                  rating={product.rating}
+                  stock={product.stock}
+                  location={product.location}
+                  description={product.description}
                 />
-              ) : (
-                <View style={[styles.heroImage, styles.heroPlaceholder, { backgroundColor: theme.backgroundElement }]}>
-                  <SymbolView
-                    name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' } as any}
-                    tintColor={theme.textSecondary}
-                    size={80}
-                  />
-                </View>
-              )}
 
-              {/* Info Card */}
-              <ThemedView type="backgroundElement" style={styles.infoCard}>
-                {/* Category & Rating row */}
-                <View style={styles.metaRow}>
-                  <View style={[styles.categoryBadge, { backgroundColor: 'rgba(0,122,255,0.12)' }]}>
-                    <ThemedText type="small" style={styles.categoryBadgeText}>
-                      {product.category || 'General'}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.ratingBox}>
-                    <ThemedText style={styles.starText}>
-                      {renderStars(product.rating ?? 4.5)}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: 4 }}>
-                      {product.rating ?? '4.5'}
-                    </ThemedText>
-                  </View>
-                </View>
-
-                {/* Product Name */}
-                <ThemedText type="subtitle" style={styles.productName}>
-                  {product.name}
-                </ThemedText>
-
-                {/* Price */}
-                <ThemedText style={styles.priceText}>
-                  {formatPrice(product.price)}
-                </ThemedText>
-
-                {/* Divider */}
-                <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-
-                {/* Specs grid — always show price + category + rating */}
-                <ThemedText type="smallBold" style={styles.sectionLabel}>
-                  Specifications
-                </ThemedText>
-                <View style={styles.specsGrid}>
-                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
-                    <SymbolView
-                      tintColor="#007AFF"
-                      name={{ ios: 'tag', android: 'sell', web: 'sell' } as any}
-                      size={20}
-                    />
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Price</ThemedText>
-                    <ThemedText type="smallBold" style={[styles.specValue, { color: '#007AFF' }]}>
-                      {formatPrice(product.price)}
-                    </ThemedText>
-                  </View>
-
-                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
-                    <SymbolView
-                      tintColor="#FF9500"
-                      name={{ ios: 'square.grid.2x2', android: 'category', web: 'category' } as any}
-                      size={20}
-                    />
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Category</ThemedText>
-                    <ThemedText type="smallBold" style={styles.specValue} numberOfLines={1}>
-                      {product.category || 'General'}
-                    </ThemedText>
-                  </View>
-
-                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
-                    <SymbolView
-                      tintColor="#FFB300"
-                      name={{ ios: 'star.fill', android: 'star', web: 'star' } as any}
-                      size={20}
-                    />
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Rating</ThemedText>
-                    <ThemedText type="smallBold" style={[styles.specValue, { color: '#FFB300' }]}>
-                      {product.rating ?? '4.5'} / 5
-                    </ThemedText>
-                  </View>
-
-                  {/* Stock — only if API returns it */}
-                  {product.stock !== undefined && product.stock !== null && (
-                    <View style={[styles.specItem, { backgroundColor: theme.background }]}>
-                      <SymbolView
-                        tintColor="#30D158"
-                        name={{ ios: 'shippingbox', android: 'inventory', web: 'inventory' } as any}
-                        size={20}
-                      />
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Stock</ThemedText>
-                      <ThemedText type="smallBold" style={[styles.specValue, { color: '#30D158' }]}>
-                        {String(product.stock)} units
-                      </ThemedText>
-                    </View>
-                  )}
-
-                  {/* Location */}
-                  <View style={[styles.specItem, { backgroundColor: theme.background }]}>
-                    <SymbolView
-                      tintColor="#AF52DE"
-                      name={{ ios: 'mappin.circle', android: 'location_on', web: 'location_on' } as any}
-                      size={20}
-                    />
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>Location</ThemedText>
-                    <ThemedText type="smallBold" style={[styles.specValue, { color: '#AF52DE' }]} numberOfLines={2}>
-                      {product.location_text && product.location_text.trim() !== '' ? product.location_text : 'Not Specified'}
-                    </ThemedText>
-                  </View>
-                </View>
-
-                {/* Divider */}
-                <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-
-                {/* Description */}
-                <ThemedText type="smallBold" style={styles.sectionLabel}>
-                  Description
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.descriptionText}>
-                  {product.description || 'No description available for this product.'}
-                </ThemedText>
-
-                {/* Customer Shopping Actions (Quantity Selector & Add to Cart) */}
-                <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-                
-                <View style={styles.purchaseSection}>
-                  <View style={styles.quantityRow}>
-                    <ThemedText type="smallBold">Quantity:</ThemedText>
-                    <View style={[styles.quantityStepper, { backgroundColor: theme.background }]}>
-                      <Pressable
-                        onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-                        disabled={quantity <= 1 || isOutOfStock}
-                        style={({ pressed }) => [styles.stepBtn, (pressed || quantity <= 1) && styles.stepBtnDisabled]}
-                      >
-                        <ThemedText style={[styles.stepBtnText, { color: theme.text }]}>−</ThemedText>
-                      </Pressable>
-                      <ThemedText style={[styles.quantityValue, { color: theme.text }]}>{quantity}</ThemedText>
-                      <Pressable
-                        onPress={() => setQuantity((q) => Math.min(maxStock, q + 1))}
-                        disabled={quantity >= maxStock || isOutOfStock}
-                        style={({ pressed }) => [styles.stepBtn, (pressed || quantity >= maxStock) && styles.stepBtnDisabled]}
-                      >
-                        <ThemedText style={[styles.stepBtnText, { color: theme.text }]}>+</ThemedText>
-                      </Pressable>
-                    </View>
-                  </View>
-
-                  <View style={styles.purchaseButtonsRow}>
-                    {/* Add to Cart Button */}
-                    <Pressable
-                      onPress={handleAddToCart}
-                      disabled={isOutOfStock}
-                      style={({ pressed }) => [
-                        styles.addToCartBtn,
-                        { backgroundColor: addedSuccess ? '#34C759' : theme.text },
-                        (pressed || isOutOfStock) && styles.pressed,
-                        isOutOfStock && styles.btnDisabled,
-                      ]}
-                    >
-                      <SymbolView
-                        tintColor={theme.background}
-                        name={{ ios: addedSuccess ? 'checkmark.circle.fill' : 'cart.badge.plus', android: 'add_shopping_cart', web: 'add_shopping_cart' } as any}
-                        size={18}
-                      />
-                      <ThemedText type="smallBold" style={[styles.addToCartText, { color: theme.background }]}>
-                        {isOutOfStock ? 'Out of Stock' : addedSuccess ? 'Added to Cart! ✓' : 'Add to Cart'}
-                      </ThemedText>
-                    </Pressable>
-
-                    {/* Buy Now Button */}
-                    {!isOutOfStock && (
-                      <Pressable
-                        onPress={handleBuyNow}
-                        style={({ pressed }) => [
-                          styles.buyNowBtn,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <SymbolView
-                          tintColor="#ffffff"
-                          name={{ ios: 'bolt.fill', android: 'flash_on', web: 'flash_on' } as any}
-                          size={18}
-                        />
-                        <ThemedText type="smallBold" style={styles.buyNowText}>
-                          Buy Now
-                        </ThemedText>
-                      </Pressable>
-                    )}
-                  </View>
-                </View>
-
-                {/* Admin Buttons */}
-                {isAdmin && (
-                  <>
-                    <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-                    <ThemedText type="smallBold" style={styles.sectionLabel}>
-                      Admin Actions
-                    </ThemedText>
-                    <View style={styles.adminButtons}>
-                      <Pressable
-                        onPress={() =>
-                          router.push({
-                            pathname: '/edit' as any,
-                            params: { id: String(product.id) },
-                          })
-                        }
-                        style={({ pressed }) => [
-                          styles.actionBtn,
-                          { backgroundColor: '#FF9500', flex: 1 },
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <SymbolView
-                          tintColor="#fff"
-                          name={{ ios: 'pencil', android: 'edit', web: 'edit' } as any}
-                          size={16}
-                        />
-                        <ThemedText type="smallBold" style={styles.actionBtnText}>
-                          Edit
-                        </ThemedText>
-                      </Pressable>
-
-                      <Pressable
-                        onPress={handleDelete}
-                        style={({ pressed }) => [
-                          styles.actionBtn,
-                          { backgroundColor: '#FF3B30', flex: 1 },
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <SymbolView
-                          tintColor="#fff"
-                          name={{ ios: 'trash', android: 'delete', web: 'delete' } as any}
-                          size={16}
-                        />
-                        <ThemedText type="smallBold" style={styles.actionBtnText}>
-                          Delete
-                        </ThemedText>
-                      </Pressable>
-                    </View>
-                  </>
-                )}
-              </ThemedView>
+                <ProductActionBar
+                  quantity={quantity}
+                  maxStock={Number(product.stock) || 0}
+                  onQuantityChange={setQuantity}
+                  onAddToCart={handleAddToCart}
+                  addedSuccess={addedSuccess}
+                  isAdmin={isAdmin}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              </View>
             </View>
-          )}
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1 },
-  scrollView: { flex: 1 },
-  scrollContent: {
-    paddingBottom: BottomTabInset + Spacing.six,
-    alignItems: 'center',
+  container: {
+    flex: 1,
   },
-
-  navBar: {
+  safeArea: {
+    flex: 1,
+  },
+  headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderBottomWidth: 2,
-    borderBottomColor: '#3d3938',
-    backgroundColor: '#313131',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    minWidth: 72,
-  },
-  backText: { fontSize: 15 },
-  navTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-
-  centerState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
     paddingHorizontal: Spacing.four,
-    gap: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderBottomWidth: 1,
   },
-  detailWrapper: {
-    width: '100%',
-    maxWidth: 720,
-    ...Platform.select({ web: { width: 'calc(100% - 0px)' as any } }),
-  },
-
-  heroImage: {
-    width: '100%',
-    height: 320,
-    borderRadius: 0,
-  },
-  heroPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1d1e1e',
-  },
-
-  infoCard: {
-    margin: Spacing.three,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
-
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  categoryBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 4,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#6cc349',
-    backgroundColor: 'rgba(108,195,73,0.12)',
-  },
-  categoryBadgeText: {
-    color: '#6cc349',
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  ratingBox: {
+  backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  starText: {
-    color: '#ffc42b',
-    fontSize: 14,
-  },
-
-  productName: {
-    fontSize: 22,
-    fontWeight: '800',
-    lineHeight: 28,
-    color: '#ffffff',
-  },
-  priceText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#ffc42b',
-  },
-
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    color: '#d0c5c0',
-  },
-  descriptionText: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#d0c5c0',
-  },
-
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: '#3d3938',
-  },
-
-  infoGrid: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  infoGridItem: {
-    flex: 1,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    padding: Spacing.three,
-    alignItems: 'center',
-    gap: 2,
-  },
-
-  specsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  specItem: {
-    width: '47%',
-    ...Platform.select({ web: { width: `calc(50% - ${Spacing.one}px)` as any } }),
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    padding: Spacing.three,
     gap: 4,
   },
-  specLabel: {
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    color: '#d0c5c0',
+  headerTitle: {
+    fontSize: 16,
+    maxWidth: 200,
   },
-  specValue: {
-    fontSize: 15,
-    fontWeight: '700',
+  scrollView: {
+    flex: 1,
   },
-
-  adminButtons: {
-    flexDirection: 'row',
-    gap: Spacing.two,
+  scrollContent: {
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    alignSelf: 'center',
+    padding: Spacing.four,
+    paddingBottom: BottomTabInset + Spacing.six,
   },
-  actionBtn: {
-    flexDirection: 'row',
+  centerBox: {
+    paddingVertical: Spacing.six * 2,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.one,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#262423',
-  },
-  actionBtnText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-
-  purchaseSection: {
     gap: Spacing.three,
-    marginTop: Spacing.one,
   },
-  quantityRow: {
+  backStoreBtn: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderRadius: 6,
+    marginTop: Spacing.two,
+  },
+  mainGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.five,
+    flexWrap: 'wrap',
   },
-  quantityStepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    overflow: 'hidden',
-  },
-  stepBtn: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 36,
-  },
-  stepBtnDisabled: {
-    opacity: 0.3,
-  },
-  stepBtnText: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  quantityValue: {
-    paddingHorizontal: Spacing.three,
-    fontSize: 15,
-    fontWeight: '700',
-    minWidth: 32,
-    textAlign: 'center',
-  },
-  purchaseButtonsRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  addToCartBtn: {
+  imageColumn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingVertical: 15,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 0,
-    backgroundColor: '#3c8527',
-    borderWidth: 2,
-    borderColor: '#262423',
+    minWidth: 320,
   },
-  addToCartText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: 0.54,
+  infoColumn: {
+    flex: 1.2,
+    minWidth: 320,
+    gap: Spacing.four,
   },
-  buyNowBtn: {
-    flex: 1,
-    backgroundColor: '#6cc349',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingVertical: 15,
-    paddingHorizontal: Spacing.three,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#3c8527',
+  pressed: {
+    opacity: 0.7,
   },
-  buyNowText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.54,
-  },
-  btnDisabled: {
-    opacity: 0.5,
-  },
-
-  pressed: { opacity: 0.75 },
 });

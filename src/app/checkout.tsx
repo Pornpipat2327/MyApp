@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * @file checkout.tsx
+ * @description หน้าจอชำระเงินและสั่งซื้อสินค้า (Checkout Screen)
+ * รวบรวมฟอร์มข้อมูลที่อยู่จัดส่ง, ช่องทางการชำระเงิน (PromptPay/โอนธนาคาร/COD), สรุปยอดเงิน และบันทึกคำสั่งซื้อ
+ */
+
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
   View,
   Pressable,
-  TextInput,
-  Image,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,40 +20,19 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useCart, CartItem } from '@/hooks/use-cart';
-import { getBaseUrl } from '@/constants/api';
-
-export interface Order {
-  id: string;
-  username: string;
-  userRole?: string;
-  createdAt: string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
-  items: CartItem[];
-  subtotal: number;
-  shippingFee: number;
-  discount: number;
-  totalAmount: number;
-  couponCode?: string;
-  shippingAddress: {
-    recipientName: string;
-    phone: string;
-    address: string;
-    city: string;
-    postalCode: string;
-    note?: string;
-  };
-  paymentMethod: 'promptpay' | 'bank_transfer' | 'cod';
-  paymentStatus: 'paid' | 'pending';
-  trackingNumber?: string;
-}
+import { useCart } from '@/hooks/use-cart';
+import { Order, PaymentMethod } from '@/types/order';
+import { ShippingForm, ShippingFormValues } from '@/components/checkout/shipping-form';
+import { PaymentMethodSelector } from '@/components/checkout/payment-method-selector';
+import { OrderSummaryCard } from '@/components/checkout/order-summary-card';
+import { OrderSuccessModal } from '@/components/checkout/order-success-modal';
+import { getStorageJSON, setStorageJSON } from '@/utils/storage';
 
 export default function CheckoutScreen() {
   const theme = useTheme();
   const router = useRouter();
   const {
     items,
-    totalItems,
     subtotal,
     shippingFee,
     discount,
@@ -59,61 +41,59 @@ export default function CheckoutScreen() {
     clearCart,
   } = useCart();
 
-  // Form State
-  const [recipientName, setRecipientName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [note, setNote] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'promptpay' | 'bank_transfer' | 'cod'>('promptpay');
+  // กำหนดค่าเริ่มต้นของผู้รับจาก User ที่เข้าสู่ระบบ (Lazy initialization ป้องกัน cascading renders)
+  const [shippingValues, setShippingValues] = useState<ShippingFormValues>(() => {
+    let defaultRecipient = '';
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        const user = getStorageJSON<{ username?: string }>('user', {});
+        if (user?.username) defaultRecipient = user.username;
+      } catch {}
+    }
+    return {
+      recipientName: defaultRecipient,
+      phone: '',
+      address: '',
+      city: '',
+      postalCode: '',
+      note: '',
+    };
+  });
 
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('promptpay');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
-  // Auto-fill user information if logged in
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const userObj = JSON.parse(userStr);
-          if (userObj?.username) {
-            setRecipientName(userObj.username);
-          }
-        } catch (e) {}
-      }
-    }
-  }, []);
+  const handleShippingChange = useCallback(
+    <K extends keyof ShippingFormValues>(key: K, value: ShippingFormValues[K]) => {
+      setShippingValues((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
 
-  const getImageSource = (imagePath?: string) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
-      return { uri: imagePath };
-    }
-    if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/')) {
-      return { uri: `${getBaseUrl()}${imagePath}` };
-    }
-    return null;
-  };
-
+  /**
+   * ฟังก์ชันดำเนินการสั่งซื้อสินค้า
+   */
   const handlePlaceOrder = () => {
-    // Validate inputs
-    if (!recipientName.trim()) {
-      setErrorMessage('Please enter recipient name');
+    if (!shippingValues.recipientName.trim()) {
+      setErrorMessage('กรุณาระบุชื่อ-นามสกุล ผู้รับ');
       return;
     }
-    if (!phone.trim()) {
-      setErrorMessage('Please enter phone number');
+    if (!shippingValues.phone.trim()) {
+      setErrorMessage('กรุณาระบุเบอร์โทรศัพท์ติดต่อ');
       return;
     }
-    if (!address.trim() || !city.trim() || !postalCode.trim()) {
-      setErrorMessage('Please fill in complete shipping address (Address, City, Postal Code)');
+    if (
+      !shippingValues.address.trim() ||
+      !shippingValues.city.trim() ||
+      !shippingValues.postalCode.trim()
+    ) {
+      setErrorMessage('กรุณากรอกข้อมูลที่อยู่จัดส่งให้ครบถ้วน (ที่อยู่, เมือง/จังหวัด, รหัสไปรษณีย์)');
       return;
     }
     if (items.length === 0) {
-      setErrorMessage('Your cart is empty. Please add products first.');
+      setErrorMessage('ไม่มีสินค้าในตะกร้า กรุณาเลือกสินค้าก่อนทำการสั่งซื้อ');
       return;
     }
 
@@ -121,22 +101,12 @@ export default function CheckoutScreen() {
     setErrorMessage(null);
 
     setTimeout(() => {
-      // Generate Order ID e.g. #EK-74892
       const randomNum = Math.floor(10000 + Math.random() * 90000);
       const orderId = `EK-${randomNum}`;
 
-      let currentUsername = 'Guest';
-      let currentRole = 'user';
-      if (Platform.OS === 'web') {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          try {
-            const u = JSON.parse(userStr);
-            currentUsername = u.username || 'Guest';
-            currentRole = u.role || 'user';
-          } catch (e) {}
-        }
-      }
+      const user = getStorageJSON<{ username?: string; role?: string }>('user', {});
+      const currentUsername = user?.username || 'Guest';
+      const currentRole = user?.role || 'user';
 
       const newOrder: Order = {
         id: orderId,
@@ -151,36 +121,34 @@ export default function CheckoutScreen() {
         totalAmount: grandTotal,
         couponCode: appliedCoupon?.code,
         shippingAddress: {
-          recipientName: recipientName.trim(),
-          phone: phone.trim(),
-          address: address.trim(),
-          city: city.trim(),
-          postalCode: postalCode.trim(),
-          note: note.trim(),
+          recipientName: shippingValues.recipientName.trim(),
+          phone: shippingValues.phone.trim(),
+          address: shippingValues.address.trim(),
+          city: shippingValues.city.trim(),
+          postalCode: shippingValues.postalCode.trim(),
+          note: shippingValues.note.trim(),
         },
         paymentMethod,
         paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
         trackingNumber: `TH${Math.floor(100000000 + Math.random() * 900000000)}TH`,
       };
 
-      // Save to localStorage
-      if (Platform.OS === 'web') {
+      // บันทึกลง LocalStorage
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
         try {
-          const existingOrdersStr = localStorage.getItem('extreme_keys_orders');
-          const existingOrders: Order[] = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
+          const existingOrders = getStorageJSON<Order[]>('extreme_keys_orders', []);
           const updatedOrders = [newOrder, ...existingOrders];
-          localStorage.setItem('extreme_keys_orders', JSON.stringify(updatedOrders));
+          setStorageJSON('extreme_keys_orders', updatedOrders);
           window.dispatchEvent(new Event('orders-change'));
         } catch (e) {
           console.error('Failed to save order to localStorage', e);
         }
       }
 
-      // Clear cart
       clearCart();
       setLoading(false);
       setCompletedOrder(newOrder);
-    }, 1200);
+    }, 800);
   };
 
   return (
@@ -188,8 +156,8 @@ export default function CheckoutScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <TopHeader />
 
-        {/* Header Bar */}
-        <View style={[styles.headerBar, { borderBottomColor: 'rgba(128,128,128,0.15)' }]}>
+        {/* แถบย้อนกลับและหัวข้อ */}
+        <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
           <Pressable
             onPress={() => router.push('/cart' as any)}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
@@ -199,12 +167,12 @@ export default function CheckoutScreen() {
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
               size={20}
             />
-            <ThemedText type="smallBold">Cart</ThemedText>
+            <ThemedText type="smallBold">ตะกร้าสินค้า</ThemedText>
           </Pressable>
           <ThemedText type="smallBold" style={styles.headerTitle}>
-            Checkout & Payment
+            ชำระเงินและจัดส่ง (Checkout)
           </ThemedText>
-          <View style={{ width: 60 }} />
+          <View style={{ width: 80 }} />
         </View>
 
         <ScrollView
@@ -213,353 +181,44 @@ export default function CheckoutScreen() {
           showsVerticalScrollIndicator={false}
         >
           {completedOrder ? (
-            /* Order Success Modal State */
-            <ThemedView type="backgroundElement" style={styles.successCard}>
-              <View style={styles.successIconCircle}>
-                <SymbolView
-                  tintColor="#34C759"
-                  name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } as any}
-                  size={64}
-                />
-              </View>
-              <ThemedText type="subtitle" style={styles.successTitle}>
-                Order Placed Successfully! 🎉
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.successSubtitle}>
-                Thank you for your purchase. Your custom keyboard order is now being processed.
-              </ThemedText>
-
-              {/* Order Info Box */}
-              <View style={[styles.orderInfoBox, { backgroundColor: theme.background }]}>
-                <View style={styles.infoRow}>
-                  <ThemedText type="small" themeColor="textSecondary">Order ID</ThemedText>
-                  <ThemedText type="smallBold" style={{ color: '#6cc349' }}>#{completedOrder.id}</ThemedText>
-                </View>
-                <View style={styles.infoRow}>
-                  <ThemedText type="small" themeColor="textSecondary">Tracking Number</ThemedText>
-                  <ThemedText type="smallBold">{completedOrder.trackingNumber}</ThemedText>
-                </View>
-                <View style={styles.infoRow}>
-                  <ThemedText type="small" themeColor="textSecondary">Payment Method</ThemedText>
-                  <ThemedText type="smallBold" style={{ textTransform: 'uppercase' }}>{completedOrder.paymentMethod}</ThemedText>
-                </View>
-                <View style={styles.infoRow}>
-                  <ThemedText type="small" themeColor="textSecondary">Total Amount</ThemedText>
-                  <ThemedText type="smallBold" style={{ color: '#34C759', fontSize: 16 }}>
-                    ${completedOrder.totalAmount.toFixed(2)}
-                  </ThemedText>
-                </View>
-                <View style={styles.infoRow}>
-                  <ThemedText type="small" themeColor="textSecondary">Deliver To</ThemedText>
-                  <ThemedText type="small" style={{ textAlign: 'right', maxWidth: '60%' }}>
-                    {completedOrder.shippingAddress.recipientName}, {completedOrder.shippingAddress.address}, {completedOrder.shippingAddress.city} {completedOrder.shippingAddress.postalCode}
-                  </ThemedText>
-                </View>
-              </View>
-
-              {/* Action Buttons */}
-              <View style={styles.successActions}>
-                <Pressable
-                  onPress={() => router.push('/orders' as any)}
-                  style={({ pressed }) => [styles.viewOrdersBtn, pressed && styles.pressed]}
-                >
-                  <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-                    View My Orders
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => router.push('/product')}
-                  style={({ pressed }) => [styles.backHomeBtn, pressed && styles.pressed]}
-                >
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Continue Shopping
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
+            /* แสดงหน้าจอสั่งซื้อสำเร็จ */
+            <OrderSuccessModal order={completedOrder} />
           ) : (
             <View style={styles.mainWrapper}>
-              {/* Left Column: Forms */}
+              {/* คอลัมน์ซ้าย: ฟอร์มที่อยู่ และ วิธีชำระเงิน */}
               <View style={styles.formsColumn}>
                 {errorMessage && (
                   <View style={styles.errorBanner}>
-                    <ThemedText style={{ color: '#FF3B30', fontSize: 13 }}>⚠️ {errorMessage}</ThemedText>
+                    <ThemedText style={{ color: '#FF3B30', fontSize: 13 }}>
+                      ⚠️ {errorMessage}
+                    </ThemedText>
                   </View>
                 )}
 
-                {/* 1. Shipping Information Form */}
-                <ThemedView type="backgroundElement" style={styles.sectionCard}>
-                  <View style={styles.cardHeaderRow}>
-                    <SymbolView
-                      tintColor="#007AFF"
-                      name={{ ios: 'shippingbox.fill', android: 'local_shipping', web: 'local_shipping' } as any}
-                      size={20}
-                    />
-                    <ThemedText type="smallBold" style={styles.cardHeaderTitle}>
-                      1. Shipping Address & Contact
-                    </ThemedText>
-                  </View>
+                <ShippingForm
+                  values={shippingValues}
+                  onChange={handleShippingChange}
+                />
 
-                  <View style={styles.inputGrid}>
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.label}>Recipient Full Name *</ThemedText>
-                      <TextInput
-                        placeholder="e.g. John Doe"
-                        placeholderTextColor={theme.textSecondary}
-                        value={recipientName}
-                        onChangeText={setRecipientName}
-                        style={[styles.input, { color: theme.text, backgroundColor: theme.background }] as any}
-                      />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.label}>Phone Number *</ThemedText>
-                      <TextInput
-                        placeholder="e.g. 081-234-5678"
-                        placeholderTextColor={theme.textSecondary}
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                        style={[styles.input, { color: theme.text, backgroundColor: theme.background }] as any}
-                      />
-                    </View>
-
-                    <View style={[styles.inputGroup, { width: '100%' }]}>
-                      <ThemedText type="smallBold" style={styles.label}>Delivery Address *</ThemedText>
-                      <TextInput
-                        placeholder="House no., Building, Street address"
-                        placeholderTextColor={theme.textSecondary}
-                        value={address}
-                        onChangeText={setAddress}
-                        style={[styles.input, { color: theme.text, backgroundColor: theme.background }] as any}
-                      />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.label}>City / District *</ThemedText>
-                      <TextInput
-                        placeholder="e.g. Bangkok / Chatuchak"
-                        placeholderTextColor={theme.textSecondary}
-                        value={city}
-                        onChangeText={setCity}
-                        style={[styles.input, { color: theme.text, backgroundColor: theme.background }] as any}
-                      />
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <ThemedText type="smallBold" style={styles.label}>Postal Code *</ThemedText>
-                      <TextInput
-                        placeholder="e.g. 10900"
-                        placeholderTextColor={theme.textSecondary}
-                        value={postalCode}
-                        onChangeText={setPostalCode}
-                        keyboardType="numeric"
-                        style={[styles.input, { color: theme.text, backgroundColor: theme.background }] as any}
-                      />
-                    </View>
-
-                    <View style={[styles.inputGroup, { width: '100%' }]}>
-                      <ThemedText type="smallBold" style={styles.label}>Delivery Note (Optional)</ThemedText>
-                      <TextInput
-                        placeholder="Special instructions for delivery rider..."
-                        placeholderTextColor={theme.textSecondary}
-                        value={note}
-                        onChangeText={setNote}
-                        style={[styles.input, { color: theme.text, backgroundColor: theme.background }] as any}
-                      />
-                    </View>
-                  </View>
-                </ThemedView>
-
-                {/* 2. Payment Method Selector */}
-                <ThemedView type="backgroundElement" style={styles.sectionCard}>
-                  <View style={styles.cardHeaderRow}>
-                    <SymbolView
-                      tintColor="#34C759"
-                      name={{ ios: 'creditcard.fill', android: 'payment', web: 'payment' } as any}
-                      size={20}
-                    />
-                    <ThemedText type="smallBold" style={styles.cardHeaderTitle}>
-                      2. Payment Method
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.paymentOptions}>
-                    {/* PromptPay QR */}
-                    <Pressable
-                      onPress={() => setPaymentMethod('promptpay')}
-                      style={[
-                        styles.paymentOptionCard,
-                        { backgroundColor: theme.background },
-                        paymentMethod === 'promptpay' && styles.paymentOptionActive,
-                      ]}
-                    >
-                      <View style={styles.paymentOptionHeader}>
-                        <View style={styles.radioCircle}>
-                          {paymentMethod === 'promptpay' && <View style={styles.radioInner} />}
-                        </View>
-                        <ThemedText type="smallBold">📱 PromptPay QR Code</ThemedText>
-                      </View>
-                      <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: 28 }}>
-                        Instant payment via Mobile Banking (Scannable QR Code)
-                      </ThemedText>
-
-                      {paymentMethod === 'promptpay' && (
-                        <View style={styles.qrDemoBox}>
-                          <View style={styles.qrCodePlaceholder}>
-                            <ThemedText style={{ fontSize: 32 }}>📲</ThemedText>
-                            <ThemedText type="smallBold" style={{ color: '#007AFF', marginTop: 4 }}>
-                              PromptPay Thai QR
-                            </ThemedText>
-                            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
-                              Amount: ${grandTotal.toFixed(2)} (฿{(grandTotal * 35).toLocaleString()})
-                            </ThemedText>
-                          </View>
-                          <ThemedText type="small" style={{ color: '#34C759', textAlign: 'center', marginTop: 6, fontSize: 12 }}>
-                            ✓ Live QR generated — Automatic Verification Enabled
-                          </ThemedText>
-                        </View>
-                      )}
-                    </Pressable>
-
-                    {/* Bank Transfer */}
-                    <Pressable
-                      onPress={() => setPaymentMethod('bank_transfer')}
-                      style={[
-                        styles.paymentOptionCard,
-                        { backgroundColor: theme.background },
-                        paymentMethod === 'bank_transfer' && styles.paymentOptionActive,
-                      ]}
-                    >
-                      <View style={styles.paymentOptionHeader}>
-                        <View style={styles.radioCircle}>
-                          {paymentMethod === 'bank_transfer' && <View style={styles.radioInner} />}
-                        </View>
-                        <ThemedText type="smallBold">🏦 Bank Transfer</ThemedText>
-                      </View>
-                      <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: 28 }}>
-                        Kasikorn Bank (KBank) / Siam Commercial Bank (SCB)
-                      </ThemedText>
-
-                      {paymentMethod === 'bank_transfer' && (
-                        <View style={styles.bankInfoBox}>
-                          <ThemedText type="small" style={{ fontWeight: '700' }}>
-                            🏦 Kasikorn Bank (KBANK)
-                          </ThemedText>
-                          <ThemedText type="small" themeColor="textSecondary">
-                            Account: 123-4-56789-0 (ExtremeKeys Co., Ltd.)
-                          </ThemedText>
-                        </View>
-                      )}
-                    </Pressable>
-
-                    {/* Cash on Delivery */}
-                    <Pressable
-                      onPress={() => setPaymentMethod('cod')}
-                      style={[
-                        styles.paymentOptionCard,
-                        { backgroundColor: theme.background },
-                        paymentMethod === 'cod' && styles.paymentOptionActive,
-                      ]}
-                    >
-                      <View style={styles.paymentOptionHeader}>
-                        <View style={styles.radioCircle}>
-                          {paymentMethod === 'cod' && <View style={styles.radioInner} />}
-                        </View>
-                        <ThemedText type="smallBold">💵 Cash on Delivery (COD)</ThemedText>
-                      </View>
-                      <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: 28 }}>
-                        Pay cash when the keyboard package arrives at your door
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-                </ThemedView>
+                <PaymentMethodSelector
+                  selectedMethod={paymentMethod}
+                  onSelectMethod={setPaymentMethod}
+                  totalAmount={grandTotal}
+                />
               </View>
 
-              {/* Right Column: Order Summary & Confirm */}
+              {/* คอลัมน์ขวา: การ์ดสรุปยอดเงินและปุ่มสั่งซื้อ */}
               <View style={styles.summaryColumn}>
-                <ThemedView type="backgroundElement" style={styles.summaryCard}>
-                  <ThemedText type="smallBold" style={styles.summaryTitle}>
-                    Order Review ({totalItems} items)
-                  </ThemedText>
-
-                  {/* Items mini list */}
-                  <View style={styles.miniItemsList}>
-                    {items.map((item) => (
-                      <View key={item.id} style={styles.miniItemRow}>
-                        <View style={styles.miniItemThumb}>
-                          {getImageSource(item.image) ? (
-                            <Image source={getImageSource(item.image)!} style={styles.miniImg} />
-                          ) : (
-                            <View style={styles.miniImgPlaceholder}>
-                              <SymbolView tintColor={theme.textSecondary} name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' } as any} size={14} />
-                            </View>
-                          )}
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <ThemedText type="smallBold" numberOfLines={1} style={{ fontSize: 13 }}>
-                            {item.name}
-                          </ThemedText>
-                          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
-                            Qty: {item.quantity} × ${item.price.toFixed(2)}
-                          </ThemedText>
-                        </View>
-                        <ThemedText type="smallBold" style={{ fontSize: 13 }}>
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </ThemedText>
-                      </View>
-                    ))}
-                  </View>
-
-                  <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-
-                  <View style={styles.priceRow}>
-                    <ThemedText type="small" themeColor="textSecondary">Subtotal</ThemedText>
-                    <ThemedText type="smallBold">${subtotal.toFixed(2)}</ThemedText>
-                  </View>
-
-                  <View style={styles.priceRow}>
-                    <ThemedText type="small" themeColor="textSecondary">Shipping Fee</ThemedText>
-                    <ThemedText type="smallBold" style={{ color: shippingFee === 0 ? '#34C759' : theme.text }}>
-                      {shippingFee === 0 ? 'FREE' : `$${shippingFee.toFixed(2)}`}
-                    </ThemedText>
-                  </View>
-
-                  {discount > 0 && (
-                    <View style={styles.priceRow}>
-                      <ThemedText type="small" style={{ color: '#34C759' }}>Discount ({appliedCoupon?.code})</ThemedText>
-                      <ThemedText type="smallBold" style={{ color: '#34C759' }}>-${discount.toFixed(2)}</ThemedText>
-                    </View>
-                  )}
-
-                  <View style={[styles.divider, { backgroundColor: 'rgba(128,128,128,0.15)' }]} />
-
-                  <View style={styles.totalRow}>
-                    <ThemedText type="subtitle" style={{ fontSize: 18 }}>Total to Pay</ThemedText>
-                    <ThemedText type="subtitle" style={styles.totalAmountText}>
-                      ${grandTotal.toFixed(2)}
-                    </ThemedText>
-                  </View>
-
-                  {/* Place Order Button */}
-                  <Pressable
-                    onPress={handlePlaceOrder}
-                    disabled={loading || items.length === 0}
-                    style={({ pressed }) => [
-                      styles.placeOrderBtn,
-                      (pressed || loading) && styles.pressed,
-                    ]}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <ThemedText type="smallBold" style={styles.placeOrderText}>
-                        Place Order (${grandTotal.toFixed(2)}) 🚀
-                      </ThemedText>
-                    )}
-                  </Pressable>
-                </ThemedView>
+                <OrderSummaryCard
+                  items={items}
+                  subtotal={subtotal}
+                  shippingFee={shippingFee}
+                  discount={discount}
+                  grandTotal={grandTotal}
+                  appliedCoupon={appliedCoupon}
+                  loading={loading}
+                  onPlaceOrder={handlePlaceOrder}
+                />
               </View>
             </View>
           )}
@@ -582,15 +241,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 2,
-    borderBottomColor: '#3d3938',
-    backgroundColor: '#313131',
+    borderBottomWidth: 1,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    minWidth: 60,
   },
   headerTitle: {
     fontSize: 16,
@@ -599,293 +255,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    alignItems: 'center',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    alignSelf: 'center',
+    padding: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.six,
   },
   mainWrapper: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.four,
+    flexWrap: 'wrap',
   },
   formsColumn: {
-    flex: 1,
+    flex: 1.4,
     minWidth: 320,
     gap: Spacing.four,
   },
   summaryColumn: {
-    width: 340,
-    ...Platform.select({
-      web: {
-        position: 'sticky',
-        top: 20,
-      } as any,
-    }),
-  },
-  sectionCard: {
-    padding: Spacing.four,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    gap: Spacing.three,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    marginBottom: Spacing.one,
-  },
-  cardHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  inputGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  inputGroup: {
-    width: '48%',
-    ...Platform.select({
-      web: { width: `calc(50% - ${Spacing.two}px)` as any },
-    }),
-  },
-  label: {
-    fontSize: 11,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: '#d0c5c0',
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#898481',
-    borderRadius: 0,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 14,
-    backgroundColor: '#262423',
-    color: '#ede5e2',
-    height: 48,
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none' as any,
-        fontFamily: 'var(--font-sans)',
-      },
-    }),
-  },
-  paymentOptions: {
-    gap: Spacing.two,
-  },
-  paymentOptionCard: {
-    padding: Spacing.three,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-  },
-  paymentOptionActive: {
-    borderColor: '#6cc349',
-    borderWidth: 2,
-  },
-  paymentOptionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    marginBottom: 2,
-  },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#6cc349',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 0,
-    backgroundColor: '#6cc349',
-  },
-  qrDemoBox: {
-    marginTop: Spacing.two,
-    padding: Spacing.three,
-    backgroundColor: 'rgba(108,195,73,0.05)',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    alignItems: 'center',
-  },
-  qrCodePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.two,
-    borderWidth: 1,
-    borderColor: '#6cc349',
-    borderRadius: 0,
-    width: '100%',
-    maxWidth: 240,
-    backgroundColor: '#262423',
-  },
-  bankInfoBox: {
-    marginTop: Spacing.two,
-    padding: Spacing.two,
-    backgroundColor: 'rgba(108,195,73,0.08)',
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#52a535',
-  },
-  summaryCard: {
-    padding: Spacing.four,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    gap: Spacing.two,
-  },
-  summaryTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: '#d0c5c0',
-    marginBottom: Spacing.one,
-  },
-  miniItemsList: {
-    gap: Spacing.two,
-    maxHeight: 180,
-  },
-  miniItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  miniItemThumb: {
-    width: 36,
-    height: 36,
-    borderRadius: 0,
-    overflow: 'hidden',
-  },
-  miniImg: {
-    width: '100%',
-    height: '100%',
-  },
-  miniImgPlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1d1e1e',
-  },
-  divider: {
-    height: 1,
-    width: '100%',
-    marginVertical: Spacing.one,
-    backgroundColor: '#3d3938',
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  totalAmountText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#6cc349',
-  },
-  placeOrderBtn: {
-    backgroundColor: '#3c8527',
-    paddingVertical: 15,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#262423',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: Spacing.two,
-  },
-  placeOrderText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.54,
+    flex: 1,
+    minWidth: 280,
   },
   errorBanner: {
-    backgroundColor: 'rgba(255,96,94,0.15)',
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
     padding: Spacing.two,
-    borderRadius: 0,
-    borderColor: '#ff605e',
-    borderWidth: 1,
-  },
-  successCard: {
-    width: '100%',
-    maxWidth: 540,
-    alignItems: 'center',
-    padding: Spacing.five,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#6cc349',
-    marginTop: Spacing.four,
-    gap: Spacing.three,
-  },
-  successIconCircle: {
-    marginBottom: Spacing.two,
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-    color: '#ffffff',
-  },
-  successSubtitle: {
-    textAlign: 'center',
-    marginTop: Spacing.one,
-    marginBottom: Spacing.four,
-    maxWidth: 400,
-    color: '#d0c5c0',
-  },
-  orderInfoBox: {
-    width: '100%',
-    padding: Spacing.four,
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: '#3d3938',
-    gap: Spacing.two,
-    marginBottom: Spacing.four,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  successActions: {
-    width: '100%',
-    gap: Spacing.two,
-  },
-  viewOrdersBtn: {
-    width: '100%',
-    paddingVertical: 15,
-    borderRadius: 0,
-    borderWidth: 2,
-    borderColor: '#262423',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3c8527',
-  },
-  backHomeBtn: {
-    width: '100%',
-    paddingVertical: Spacing.two,
-    alignItems: 'center',
+    borderRadius: 6,
   },
   pressed: {
-    opacity: 0.75,
+    opacity: 0.7,
   },
 });
