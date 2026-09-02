@@ -1,9 +1,49 @@
+/* ─── Google Fonts: Minecraft Design System ──────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans:wght@400;700;800&display=swap');
+
+/* ─── Minecraft Design System Tokens ─────────────────────────────────────── */
 :root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
+  /* Vanilla Green ramp */
+  --mc-vanilla-green-1: #a0e081;
+  --mc-vanilla-green-2: #86d562;
+  --mc-vanilla-green-3: #6cc349;
+  --mc-vanilla-green-4: #52a535;
+  --mc-vanilla-green-5: #3c8527;
+  --mc-vanilla-green-6: #2a641c;
+
+  /* Sub-brand voltages */
+  --mc-dungeons-orange: #ffc42b;
+  --mc-marketplace-gold: #fff27a;
+
+  /* Core neutrals */
+  --mc-off-white: #ffffff;
+  --mc-off-black: #171615;
+  --mc-rich-black: #000000;
+  --mc-canvas-dark: #313131;
+  --mc-surface-dark: #1d1e1e;
+  --mc-surface-dark-soft: #3d3938;
+  --mc-surface-mid: #262423;
+  --mc-grey-2: #d0c5c0;
+  --mc-grey-3: #aba09c;
+  --mc-grey-warm-1: #ede5e2;
+  --mc-grey-soft: #898481;
+
+  /* Semantic */
+  --mc-focus-blue: #1157be;
+  --mc-warning-red: #ff605e;
+
+  /* Typography */
+  --font-display: 'Press Start 2P', 'Courier New', monospace;
+  --font-sans: 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-rounded: 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+/* ─── Dark canvas base ────────────────────────────────────────────────────── */
+html,
+body {
+  background-color: var(--mc-canvas-dark);
+  color: var(--mc-off-white);
+  font-family: var(--font-sans);
 }

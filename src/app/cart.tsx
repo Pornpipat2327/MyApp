@@ -381,7 +381,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',         // surface-dark-soft
+    backgroundColor: '#313131',           // canvas-dark
   },
   backButton: {
     flexDirection: 'row',
@@ -429,20 +431,26 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.one,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 11,
     fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   cartItemCard: {
     flexDirection: 'row',
     padding: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.three,
     alignItems: 'center',
   },
   imageWrapper: {
     width: 84,
     height: 84,
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
     overflow: 'hidden',
   },
   itemImage: {
@@ -465,9 +473,10 @@ const styles = StyleSheet.create({
   },
   itemCategory: {
     fontSize: 11,
-    color: '#007AFF',
+    color: '#6cc349',                     // vanilla-green-3 eyebrow
     fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   itemName: {
     fontSize: 15,
@@ -484,15 +493,15 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#6cc349',                     // vanilla-green-3 price accent
     fontWeight: '800',
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.2)',
+    borderColor: '#3d3938',
     overflow: 'hidden',
   },
   stepBtn: {
@@ -511,7 +520,9 @@ const styles = StyleSheet.create({
   },
   couponCard: {
     padding: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     marginTop: Spacing.two,
   },
   couponInputRow: {
@@ -521,19 +532,28 @@ const styles = StyleSheet.create({
   couponInput: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderColor: '#898481',               // grey-soft
+    borderRadius: 0,                      // 0px voxel doctrine
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 14,
+    backgroundColor: '#262423',           // surface-mid
+    color: '#ede5e2',                     // grey-warm-1
     ...Platform.select({
-      web: { outlineStyle: 'none' as any },
+      web: {
+        outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
+      },
     }),
   },
   applyCouponBtn: {
     paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#3c8527',           // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   couponChipsRow: {
     flexDirection: 'row',
@@ -545,9 +565,9 @@ const styles = StyleSheet.create({
   couponChip: {
     paddingHorizontal: Spacing.two,
     paddingVertical: 3,
-    borderRadius: Spacing.one,
+    borderRadius: 0,                      // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.3)',
+    borderColor: '#6cc349',               // vanilla-green-3
   },
   appliedCouponRow: {
     flexDirection: 'row',
@@ -555,23 +575,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   appliedCouponBadge: {
-    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    backgroundColor: 'rgba(108,195,73,0.15)', // vanilla-green tint
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#6cc349',
   },
   removeCouponBtn: {
     padding: Spacing.one,
   },
   summaryCard: {
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.two,
   },
   summaryTitle: {
-    fontSize: 18,
+    fontSize: 11,
     fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     marginBottom: Spacing.one,
+    color: '#d0c5c0',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -579,9 +606,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   freeShippingTip: {
-    backgroundColor: 'rgba(0, 122, 255, 0.08)',
+    backgroundColor: 'rgba(108,195,73,0.08)', // vanilla-green tint
     padding: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#52a535',               // vanilla-green-4
     marginVertical: 4,
   },
   summaryDivider: {
@@ -598,12 +627,14 @@ const styles = StyleSheet.create({
   grandTotalText: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#6cc349',                     // vanilla-green-3 grand total
   },
   checkoutBtn: {
-    backgroundColor: '#007AFF',
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    backgroundColor: '#3c8527',           // vanilla-green-5 primary button
+    paddingVertical: 15,                  // button-primary padding per spec
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#262423',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,
@@ -611,7 +642,8 @@ const styles = StyleSheet.create({
   checkoutBtnText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.54,
   },
   continueBtn: {
     paddingVertical: Spacing.two,
@@ -624,16 +656,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.six,
     paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     marginTop: Spacing.six,
   },
   browseBtn: {
     marginTop: Spacing.four,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
+    backgroundColor: '#3c8527',           // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   pressed: {
     opacity: 0.75,
   },
 });
+

@@ -1,26 +1,30 @@
 /**
  * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Theme updated to Minecraft design system (desgian.md).
+ * Keys are unchanged — only values are replaced. No business logic is affected.
  */
 
 import '@/global.css';
 
 import { Platform } from 'react-native';
 
+// ─── Minecraft Design System — all surfaces use dark canvas ───────────────
+// Both light and dark use the Minecraft dark-canvas palette so the voxel
+// aesthetic is enforced regardless of system color scheme.
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#ffffff',              // off-white
+    background: '#313131',        // canvas-dark
+    backgroundElement: '#1d1e1e', // surface-dark
+    backgroundSelected: '#3d3938',// surface-dark-soft
+    textSecondary: '#d0c5c0',     // grey-2
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#ffffff',              // off-white
+    background: '#313131',        // canvas-dark
+    backgroundElement: '#1d1e1e', // surface-dark
+    backgroundSelected: '#3d3938',// surface-dark-soft
+    textSecondary: '#d0c5c0',     // grey-2
   },
 } as const;
 

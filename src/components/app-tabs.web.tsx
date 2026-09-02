@@ -96,9 +96,11 @@ const ICON_MAP: Record<string, { ios: string; web: string }> = {
 };
 
 export function TabButton({ children, isFocused, iconName, ...props }: CustomTabButtonProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
   const icon = ICON_MAP[iconName] ?? { ios: iconName, web: iconName };
+
+  // Minecraft active: vanilla-green-3 / inactive: grey-2
+  const activeTint = '#6cc349';
+  const inactiveTint = '#d0c5c0';
 
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
@@ -106,7 +108,7 @@ export function TabButton({ children, isFocused, iconName, ...props }: CustomTab
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
         <SymbolView
-          tintColor={isFocused ? colors.text : colors.textSecondary}
+          tintColor={isFocused ? activeTint : inactiveTint}
           name={{ ios: icon.ios, web: icon.web } as any}
           size={16}
         />
@@ -134,25 +136,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: Spacing.three,
+    padding: 0,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
     zIndex: 100,
+    borderTopWidth: 2,
+    borderTopColor: '#3d3938',            // surface-dark-soft divider
+    backgroundColor: '#1d1e1e',           // surface-dark — full-width bar
   } as any,
   innerContainer: {
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.five,
+    borderRadius: 0,                      // 0px — voxel doctrine (no pill)
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.four,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    width: '100%',
+    maxWidth: 800,
   },
   pressed: {
     opacity: 0.7,
@@ -163,6 +165,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px — voxel doctrine
   },
 });

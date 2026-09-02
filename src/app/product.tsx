@@ -313,7 +313,11 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.six,
-    borderRadius: Spacing.four,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#3d3938',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349',           // vanilla-green-3 accent stripe
     marginTop: Spacing.three,
     marginBottom: Spacing.four,
     gap: Spacing.two,
@@ -324,12 +328,15 @@ const styles = StyleSheet.create({
     }),
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 26,
+    color: '#ffffff',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   heroSubtitle: {
     maxWidth: 500,
+    color: '#d0c5c0',
   },
   sectionHeader: {
     width: '100%',
@@ -341,8 +348,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   sortButton: {
     flexDirection: 'row',
@@ -369,14 +380,16 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    borderRadius: Spacing.four,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     overflow: 'hidden',
     marginBottom: Spacing.two,
   },
   productImage: {
     width: '100%',
     height: 190,
-    backgroundColor: 'rgba(128,128,128,0.05)',
+    backgroundColor: '#1d1e1e',           // surface-dark placeholder
   },
   cardContent: {
     padding: Spacing.three,
@@ -391,13 +404,14 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 11,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontWeight: '600',
+    letterSpacing: 1,
+    fontWeight: '700',
+    color: '#6cc349',                     // vanilla-green-3 eyebrow
   },
   ratingText: {
     fontSize: 12,
-    color: '#FFB300',
-    fontWeight: '600',
+    color: '#ffc42b',                     // dungeons-orange star rating
+    fontWeight: '700',
   },
   productName: {
     fontSize: 16,
@@ -414,7 +428,7 @@ const styles = StyleSheet.create({
   priceText: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#6cc349',                     // vanilla-green-3 price accent
   },
   pressed: {
     opacity: 0.8,
@@ -427,17 +441,21 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3c8527',           // vanilla-green-5 primary button
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#262423',
     marginTop: Spacing.two,
   },
   retryButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });
+
 
 

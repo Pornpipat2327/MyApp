@@ -248,7 +248,11 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.six,
-    borderRadius: Spacing.four,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#3d3938',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349',
     marginTop: Spacing.three,
     marginBottom: Spacing.four,
     gap: Spacing.two,
@@ -259,12 +263,15 @@ const styles = StyleSheet.create({
     }),
   },
   pageTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 26,
+    color: '#ffffff',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   pageSubtitle: {
     maxWidth: 500,
+    color: '#d0c5c0',
   },
   grid: {
     width: '100%',
@@ -275,14 +282,16 @@ const styles = StyleSheet.create({
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     padding: Spacing.three,
     gap: Spacing.three,
   },
   iconCircle: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 0,                      // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -296,6 +305,7 @@ const styles = StyleSheet.create({
   },
   categoryCount: {
     fontSize: 13,
+    color: '#d0c5c0',
   },
   pressed: {
     opacity: 0.8,
@@ -311,12 +321,16 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     alignItems: 'center',
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     paddingVertical: Spacing.four,
     gap: Spacing.one,
   },
   statNumber: {
     fontSize: 28,
     fontWeight: '800',
+    color: '#6cc349',               // vanilla-green-3 stat accent
   },
 });
+

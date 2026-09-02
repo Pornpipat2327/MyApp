@@ -105,7 +105,7 @@ export function TopHeader({ searchQuery = '', onSearchChange }: TopHeaderProps) 
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
           >
             <SymbolView
-              tintColor={isLoggedIn ? '#34C759' : theme.text}
+              tintColor={isLoggedIn ? '#6cc349' : theme.text}
               name={{ ios: 'person.crop.circle', android: 'person', web: 'person' } as any}
               size={20}
             />
@@ -120,8 +120,9 @@ export function TopHeader({ searchQuery = '', onSearchChange }: TopHeaderProps) 
 const styles = StyleSheet.create({
   headerContainer: {
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128,128,128,0.15)',
+    backgroundColor: '#313131',          // canvas-dark
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',         // surface-dark-soft divider
     zIndex: 10,
     ...Platform.select({
       web: {
@@ -138,13 +139,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    paddingVertical: 10,                  // top-nav height ~60px per spec
     gap: Spacing.three,
   },
   logoText: {
-    fontSize: 18,
+    fontSize: 12,                         // Press Start 2P reads large — keep small
     fontWeight: '800',
     letterSpacing: 2,
+    color: '#6cc349',                     // vanilla-green-3 brand voltage
+    ...Platform.select({
+      web: { fontFamily: 'var(--font-display)' },
+    }),
   },
   searchBar: {
     flex: 1,
@@ -152,17 +157,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px — voxel doctrine
+    borderWidth: 1,
+    borderColor: '#898481',               // grey-soft border
+    backgroundColor: '#262423',           // surface-mid input bg
     maxWidth: 320,
     gap: Spacing.two,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
+    color: '#ede5e2',                     // grey-warm-1 input text
     padding: 0,
     ...Platform.select({
       web: {
         outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
       },
     }),
   },
@@ -182,8 +192,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#ff3b30',
-    borderRadius: 8,
+    backgroundColor: '#ff605e',           // warning-red
+    borderRadius: 0,                      // 0px — voxel doctrine
     width: 14,
     height: 14,
     alignItems: 'center',
@@ -200,7 +210,7 @@ const styles = StyleSheet.create({
     right: 2,
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: '#34C759',
+    borderRadius: 0,                      // 0px — voxel doctrine
+    backgroundColor: '#6cc349',           // vanilla-green-3
   },
 });

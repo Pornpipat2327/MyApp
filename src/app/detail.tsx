@@ -1,4 +1,4 @@
-import { ThemedText } from '@/components/themed-text';
+﻿import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getProductsApiUrl, getBaseUrl } from '@/constants/api';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -532,7 +532,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
+    backgroundColor: '#313131',
   },
   backButton: {
     flexDirection: 'row',
@@ -546,8 +548,9 @@ const styles = StyleSheet.create({
   navTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 
   centerState: {
@@ -566,15 +569,19 @@ const styles = StyleSheet.create({
   heroImage: {
     width: '100%',
     height: 320,
+    borderRadius: 0,
   },
   heroPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#1d1e1e',
   },
 
   infoCard: {
     margin: Spacing.three,
-    borderRadius: Spacing.four,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     padding: Spacing.four,
     gap: Spacing.three,
   },
@@ -587,50 +594,56 @@ const styles = StyleSheet.create({
   categoryBadge: {
     paddingHorizontal: Spacing.two,
     paddingVertical: 4,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#6cc349',
+    backgroundColor: 'rgba(108,195,73,0.12)',
   },
   categoryBadgeText: {
-    color: '#007AFF',
-    fontSize: 12,
+    color: '#6cc349',
+    fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   ratingBox: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   starText: {
-    color: '#FFB300',
+    color: '#ffc42b',
     fontSize: 14,
   },
 
   productName: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
-    lineHeight: 32,
+    lineHeight: 28,
+    color: '#ffffff',
   },
   priceText: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#ffc42b',
   },
 
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    opacity: 0.5,
+    letterSpacing: 1.2,
+    color: '#d0c5c0',
   },
   descriptionText: {
     fontSize: 15,
     lineHeight: 24,
+    color: '#d0c5c0',
   },
 
   divider: {
     height: 1,
     width: '100%',
+    backgroundColor: '#3d3938',
   },
 
   infoGrid: {
@@ -639,7 +652,9 @@ const styles = StyleSheet.create({
   },
   infoGridItem: {
     flex: 1,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     padding: Spacing.three,
     alignItems: 'center',
     gap: 2,
@@ -653,7 +668,9 @@ const styles = StyleSheet.create({
   specItem: {
     width: '47%',
     ...Platform.select({ web: { width: `calc(50% - ${Spacing.one}px)` as any } }),
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     padding: Spacing.three,
     gap: 4,
   },
@@ -661,12 +678,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    color: '#d0c5c0',
   },
   specValue: {
     fontSize: 15,
     fontWeight: '700',
   },
-
 
   adminButtons: {
     flexDirection: 'row',
@@ -677,14 +694,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.one,
-    paddingVertical: Spacing.two,
+    paddingVertical: 12,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   actionBtnText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 
   purchaseSection: {
@@ -699,9 +719,9 @@ const styles = StyleSheet.create({
   quantityStepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Spacing.two,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.2)',
+    borderColor: '#3d3938',
     overflow: 'hidden',
   },
   stepBtn: {
@@ -735,29 +755,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    paddingVertical: Spacing.three,
+    paddingVertical: 15,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    backgroundColor: '#3c8527',
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   addToCartText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.54,
   },
   buyNowBtn: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#6cc349',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    paddingVertical: Spacing.three,
+    paddingVertical: 15,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#3c8527',
   },
   buyNowText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.54,
   },
   btnDisabled: {
     opacity: 0.5,

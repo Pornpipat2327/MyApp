@@ -250,12 +250,21 @@ const styles = StyleSheet.create({
     marginTop: Spacing.five,
     marginBottom: Spacing.three,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '700' },
-  sectionLink: { fontWeight: '600', color: '#007AFF', fontSize: 13 },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',                // grey-2 eyebrow text
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
+  },
+  sectionLink: { fontWeight: '700', color: '#6cc349', fontSize: 12 }, // vanilla-green-3
 
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: 0,                 // 0px voxel doctrine
     padding: Spacing.three,
+    borderWidth: 1,
+    borderColor: '#3d3938',          // surface-dark-soft border
   },
 
   welcomeRow: {
@@ -266,14 +275,22 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.one,
   },
   welcomeText: { flex: 1, gap: Spacing.one },
-  welcomeTitle: { fontSize: 24, fontWeight: '800', lineHeight: 30 },
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+    color: '#ffffff',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
+  },
   welcomeSub: { fontSize: 13, marginTop: 2 },
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 0,                 // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#3d3938',
   },
 
   statsGrid: {
@@ -285,20 +302,22 @@ const styles = StyleSheet.create({
   statCard: {
     flexBasis: '48%',
     flexGrow: 1,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                 // 0px voxel doctrine
     padding: Spacing.three,
     gap: 3,
+    borderWidth: 1,
+    borderColor: '#3d3938',
   },
   statIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,                 // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
   },
-  statLabel: { fontSize: 11, letterSpacing: 0.2 },
-  statValue: { fontSize: 22, fontWeight: '800', lineHeight: 26 },
+  statLabel: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase' },
+  statValue: { fontSize: 22, fontWeight: '800', lineHeight: 26, color: '#6cc349' }, // vanilla-green-3
 
   actionsRow: {
     flexDirection: 'row',
@@ -307,18 +326,20 @@ const styles = StyleSheet.create({
   actionCard: { flex: 1 },
   actionInner: {
     alignItems: 'center',
-    borderRadius: Spacing.three,
+    borderRadius: 0,                 // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     paddingVertical: Spacing.three,
     gap: Spacing.two,
   },
   actionIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 0,                 // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  actionLabel: { fontSize: 10, fontWeight: '700', textAlign: 'center', letterSpacing: 0.5 },
 
   productRow: {
     flexDirection: 'row',
@@ -326,10 +347,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.two,
   },
-  productThumb: { width: 44, height: 44, borderRadius: Spacing.two },
+  productThumb: { width: 44, height: 44, borderRadius: 0 },  // 0px voxel doctrine
   productInfo: { flex: 1, gap: 1 },
   productSold: { fontSize: 11 },
-  productRev: { fontSize: 13, color: '#30D158' },
+  productRev: { fontSize: 13, color: '#6cc349' },            // vanilla-green-3
 
   divider: { height: 1, marginVertical: 2 },
 });

@@ -281,9 +281,9 @@ export default function OrdersScreen() {
                 </ThemedText>
                 <Pressable
                   onPress={() => router.push('/product')}
-                  style={({ pressed }) => [styles.exploreBtn, { backgroundColor: theme.text }, pressed && styles.pressed]}
+                  style={({ pressed }) => [styles.exploreBtn, pressed && styles.pressed]}
                 >
-                  <ThemedText type="smallBold" style={{ color: theme.background }}>
+                  <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
                     Start Shopping
                   </ThemedText>
                 </Pressable>
@@ -462,7 +462,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
+    backgroundColor: '#313131',
   },
   backButton: {
     flexDirection: 'row',
@@ -490,7 +492,11 @@ const styles = StyleSheet.create({
   adminStatsBanner: {
     flexDirection: 'row',
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#3d3938',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349',
     justifyContent: 'space-around',
     alignItems: 'center',
   },
@@ -500,7 +506,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(128,128,128,0.2)',
+    backgroundColor: '#3d3938',
   },
   filterSection: {
     gap: Spacing.two,
@@ -510,13 +516,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
+    backgroundColor: '#262423',
     gap: Spacing.two,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    ...Platform.select({ web: { outlineStyle: 'none' as any } }),
+    color: '#ede5e2',
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
+      },
+    }),
   },
   filterChipsScroll: {
     flexDirection: 'row',
@@ -524,7 +539,9 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     marginRight: Spacing.two,
   },
   ordersList: {
@@ -532,7 +549,9 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.three,
   },
   orderCardHeader: {
@@ -543,22 +562,25 @@ const styles = StyleSheet.create({
   orderIdText: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#6cc349',             // vanilla-green-3 order ID
   },
   customerRoleTag: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: 'rgba(108,195,73,0.12)',
     paddingHorizontal: Spacing.two,
     paddingVertical: 2,
-    borderRadius: Spacing.one,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#6cc349',
   },
   statusBadge: {
     paddingHorizontal: Spacing.two,
     paddingVertical: 4,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
   },
   cardDivider: {
     height: 1,
     width: '100%',
+    backgroundColor: '#3d3938',
   },
   orderItemsList: {
     gap: Spacing.two,
@@ -571,7 +593,7 @@ const styles = StyleSheet.create({
   itemThumb: {
     width: 44,
     height: 44,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   itemImg: {
@@ -583,11 +605,13 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(128,128,128,0.1)',
+    backgroundColor: '#1d1e1e',
   },
   shippingDetailsBox: {
     padding: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.one,
   },
   detailLine: {
@@ -605,11 +629,11 @@ const styles = StyleSheet.create({
   totalPriceText: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#34C759',
+    color: '#6cc349',             // vanilla-green-3 total
   },
   adminControlsSection: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(128,128,128,0.15)',
+    borderTopColor: '#3d3938',
     paddingTop: Spacing.two,
   },
   statusButtonsRow: {
@@ -620,9 +644,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.2)',
+    borderColor: '#3d3938',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -632,14 +656,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.six,
     paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     marginTop: Spacing.four,
   },
   exploreBtn: {
     marginTop: Spacing.four,
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
+    backgroundColor: '#3c8527',
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   pressed: {
     opacity: 0.75,

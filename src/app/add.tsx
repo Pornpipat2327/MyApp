@@ -352,14 +352,14 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                     <View style={styles.imageActions}>
                       <Pressable
                         onPress={pickImage}
-                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#007AFF' }, pressed && styles.pressed]}
+                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#3c8527' }, pressed && styles.pressed]}
                       >
                         <SymbolView tintColor="#fff" name={{ ios: 'arrow.triangle.2.circlepath', android: 'refresh', web: 'refresh' }} size={14} />
                         <ThemedText type="small" style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Change</ThemedText>
                       </Pressable>
                       <Pressable
                         onPress={removeImage}
-                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#FF3B30' }, pressed && styles.pressed]}
+                        style={({ pressed }) => [styles.imageActionBtn, { backgroundColor: '#ff605e' }, pressed && styles.pressed]}
                       >
                         <SymbolView tintColor="#fff" name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={14} />
                         <ThemedText type="small" style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Remove</ThemedText>
@@ -376,14 +376,14 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                     pressed && styles.pressed,
                   ]}
                 >
-                  <View style={[styles.uploadIcon, { backgroundColor: '#007AFF15' }]}>
+                  <View style={[styles.uploadIcon, { backgroundColor: 'rgba(108,195,73,0.12)' }]}>
                     <SymbolView
-                      tintColor="#007AFF"
+                      tintColor="#6cc349"
                       name={{ ios: 'photo.badge.plus', android: 'add_photo_alternate', web: 'add_photo_alternate' }}
                       size={28}
                     />
                   </View>
-                  <ThemedText type="smallBold" style={{ color: '#007AFF', fontSize: 14 }}>Select Image</ThemedText>
+                  <ThemedText type="smallBold" style={{ color: '#6cc349', fontSize: 14 }}>Select Image</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
                     Tap to upload product photo
                   </ThemedText>
@@ -404,7 +404,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
                       style={({ pressed }) => [
                         styles.chip,
                         {
-                          backgroundColor: isSelected ? '#007AFF' : theme.backgroundSelected,
+                        backgroundColor: isSelected ? '#3c8527' : theme.backgroundSelected,
                         },
                         pressed && styles.pressed,
                       ]}
@@ -494,7 +494,11 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.six,
-    borderRadius: Spacing.four,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#3d3938',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349',
     marginTop: Spacing.three,
     marginBottom: Spacing.four,
     gap: Spacing.two,
@@ -504,13 +508,21 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  pageTitle: { fontSize: 28, fontWeight: '800', lineHeight: 34 },
-  pageSubtitle: { maxWidth: 500 },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+    color: '#ffffff',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
+  },
+  pageSubtitle: { maxWidth: 500, color: '#d0c5c0' },
   formCard: {
     width: '100%',
     maxWidth: MaxContentWidth,
     marginHorizontal: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     padding: Spacing.four,
     gap: Spacing.four,
     ...Platform.select({
@@ -518,41 +530,59 @@ const styles = StyleSheet.create({
     }),
   },
   fieldGroup: { gap: Spacing.two },
-  label: { fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.8 },
+  label: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: '#d0c5c0',
+  },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.three,
+    borderColor: '#898481',
+    borderRadius: 0,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 4,
     fontSize: 15,
-    ...Platform.select({ web: { outlineStyle: 'none' as any } }),
+    backgroundColor: '#262423',
+    color: '#ede5e2',
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
+      },
+    }),
   },
   textArea: { minHeight: 100, paddingTop: Spacing.two + 4 },
   uploadPlaceholder: {
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderRadius: Spacing.three,
+    borderRadius: 0,
     paddingVertical: Spacing.five,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
+    borderColor: '#6cc349',
+    backgroundColor: 'rgba(108,195,73,0.04)',
   },
   uploadIcon: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.one,
+    backgroundColor: 'rgba(108,195,73,0.12)',
   },
   imagePreviewContainer: {
-    borderRadius: Spacing.three,
+    borderRadius: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#3d3938',
   },
   imagePreview: {
     width: '100%',
     height: 200,
-    backgroundColor: 'rgba(128,128,128,0.08)',
+    backgroundColor: '#1d1e1e',
   },
   uploadingOverlay: {
     ...StyleSheet.absoluteFill,
@@ -572,26 +602,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.one,
     paddingVertical: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one + 2,
-    borderRadius: Spacing.five,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
   },
-  chipText: { fontSize: 13, fontWeight: '600' },
+  chipText: { fontSize: 13, fontWeight: '700' },
   pressed: { opacity: 0.7 },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3c8527',           // vanilla-green-5 primary button
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.three,
+    paddingVertical: 15,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#262423',
     marginTop: Spacing.two,
   },
   submitPressed: { opacity: 0.85 },
-  submitText: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
+  submitText: { color: '#ffffff', fontSize: 15, fontWeight: '800', letterSpacing: 0.54 },
 });
+

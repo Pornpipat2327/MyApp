@@ -233,7 +233,7 @@ export default function CheckoutScreen() {
               <View style={[styles.orderInfoBox, { backgroundColor: theme.background }]}>
                 <View style={styles.infoRow}>
                   <ThemedText type="small" themeColor="textSecondary">Order ID</ThemedText>
-                  <ThemedText type="smallBold" style={{ color: '#007AFF' }}>#{completedOrder.id}</ThemedText>
+                  <ThemedText type="smallBold" style={{ color: '#6cc349' }}>#{completedOrder.id}</ThemedText>
                 </View>
                 <View style={styles.infoRow}>
                   <ThemedText type="small" themeColor="textSecondary">Tracking Number</ThemedText>
@@ -261,9 +261,9 @@ export default function CheckoutScreen() {
               <View style={styles.successActions}>
                 <Pressable
                   onPress={() => router.push('/orders' as any)}
-                  style={({ pressed }) => [styles.viewOrdersBtn, { backgroundColor: theme.text }, pressed && styles.pressed]}
+                  style={({ pressed }) => [styles.viewOrdersBtn, pressed && styles.pressed]}
                 >
-                  <ThemedText type="smallBold" style={{ color: theme.background }}>
+                  <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
                     View My Orders
                   </ThemedText>
                 </Pressable>
@@ -582,7 +582,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
+    backgroundColor: '#313131',
   },
   backButton: {
     flexDirection: 'row',
@@ -625,7 +627,9 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.three,
   },
   cardHeaderRow: {
@@ -636,6 +640,7 @@ const styles = StyleSheet.create({
   },
   cardHeaderTitle: {
     fontSize: 16,
+    fontWeight: '700',
   },
   inputGrid: {
     flexDirection: 'row',
@@ -649,18 +654,27 @@ const styles = StyleSheet.create({
     }),
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
     marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.2)',
-    borderRadius: Spacing.two,
+    borderColor: '#898481',
+    borderRadius: 0,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 14,
+    backgroundColor: '#262423',
+    color: '#ede5e2',
+    height: 48,
     ...Platform.select({
-      web: { outlineStyle: 'none' as any },
+      web: {
+        outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
+      },
     }),
   },
   paymentOptions: {
@@ -668,12 +682,12 @@ const styles = StyleSheet.create({
   },
   paymentOptionCard: {
     padding: Spacing.three,
-    borderRadius: Spacing.two,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: 'rgba(128,128,128,0.15)',
+    borderColor: '#3d3938',
   },
   paymentOptionActive: {
-    borderColor: '#007AFF',
+    borderColor: '#6cc349',
     borderWidth: 2,
   },
   paymentOptionHeader: {
@@ -685,23 +699,25 @@ const styles = StyleSheet.create({
   radioCircle: {
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 0,
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#6cc349',
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioInner: {
     width: 10,
     height: 10,
-    borderRadius: 5,
-    backgroundColor: '#007AFF',
+    borderRadius: 0,
+    backgroundColor: '#6cc349',
   },
   qrDemoBox: {
     marginTop: Spacing.two,
     padding: Spacing.three,
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
-    borderRadius: Spacing.two,
+    backgroundColor: 'rgba(108,195,73,0.05)',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     alignItems: 'center',
   },
   qrCodePlaceholder: {
@@ -709,25 +725,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: Spacing.two,
     borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.2)',
-    borderRadius: Spacing.two,
+    borderColor: '#6cc349',
+    borderRadius: 0,
     width: '100%',
     maxWidth: 240,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#262423',
   },
   bankInfoBox: {
     marginTop: Spacing.two,
     padding: Spacing.two,
-    backgroundColor: 'rgba(52, 199, 89, 0.08)',
-    borderRadius: Spacing.one,
+    backgroundColor: 'rgba(108,195,73,0.08)',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#52a535',
   },
   summaryCard: {
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.two,
   },
   summaryTitle: {
-    fontSize: 16,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
     marginBottom: Spacing.one,
   },
   miniItemsList: {
@@ -742,7 +766,7 @@ const styles = StyleSheet.create({
   miniItemThumb: {
     width: 36,
     height: 36,
-    borderRadius: Spacing.one,
+    borderRadius: 0,
     overflow: 'hidden',
   },
   miniImg: {
@@ -754,12 +778,13 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(128,128,128,0.1)',
+    backgroundColor: '#1d1e1e',
   },
   divider: {
     height: 1,
     width: '100%',
     marginVertical: Spacing.one,
+    backgroundColor: '#3d3938',
   },
   priceRow: {
     flexDirection: 'row',
@@ -775,12 +800,14 @@ const styles = StyleSheet.create({
   totalAmountText: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#6cc349',
   },
   placeOrderBtn: {
-    backgroundColor: '#34C759',
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    backgroundColor: '#3c8527',
+    paddingVertical: 15,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#262423',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,
@@ -788,13 +815,14 @@ const styles = StyleSheet.create({
   placeOrderText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.54,
   },
   errorBanner: {
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    backgroundColor: 'rgba(255,96,94,0.15)',
     padding: Spacing.two,
-    borderRadius: Spacing.two,
-    borderColor: '#FF3B30',
+    borderRadius: 0,
+    borderColor: '#ff605e',
     borderWidth: 1,
   },
   successCard: {
@@ -802,27 +830,34 @@ const styles = StyleSheet.create({
     maxWidth: 540,
     alignItems: 'center',
     padding: Spacing.five,
-    borderRadius: Spacing.four,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#6cc349',
     marginTop: Spacing.four,
+    gap: Spacing.three,
   },
   successIconCircle: {
     marginBottom: Spacing.two,
   },
   successTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
+    color: '#ffffff',
   },
   successSubtitle: {
     textAlign: 'center',
     marginTop: Spacing.one,
     marginBottom: Spacing.four,
     maxWidth: 400,
+    color: '#d0c5c0',
   },
   orderInfoBox: {
     width: '100%',
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.two,
     marginBottom: Spacing.four,
   },
@@ -837,10 +872,13 @@ const styles = StyleSheet.create({
   },
   viewOrdersBtn: {
     width: '100%',
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    paddingVertical: 15,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#262423',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#3c8527',
   },
   backHomeBtn: {
     width: '100%',

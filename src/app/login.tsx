@@ -176,18 +176,19 @@ export default function LoginScreen() {
                   {user.username}
                 </ThemedText>
                 <View style={styles.statusBadge}>
-                  <ThemedText type="smallBold" style={{ color: '#34C759' }}>
+                  <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
                     Active Session ({user.role})
                   </ThemedText>
                 </View>
 
                 <Pressable
                   onPress={handleLogout}
-                  style={({ pressed }) => [
-                    styles.submitButton,
-                    { backgroundColor: '#FF3B30', marginTop: Spacing.four },
-                    pressed && styles.pressed,
-                  ] as any}
+                  style={({ pressed }) =>
+                    [
+                      styles.submitButton,
+                      { backgroundColor: '#ff605e', marginTop: Spacing.four }, // warning-red logout
+                      pressed && styles.pressed,
+                    ] as any}
                 >
                   <ThemedText type="smallBold" style={styles.submitButtonText}>
                     Sign Out
@@ -291,16 +292,16 @@ export default function LoginScreen() {
                 <Pressable
                   onPress={mode === 'login' ? handleLogin : handleRegister}
                   disabled={loading}
-                  style={({ pressed }) => [
-                    styles.submitButton,
-                    { backgroundColor: theme.text },
-                    (pressed || loading) && styles.pressed,
-                  ] as any}
+                  style={({ pressed }) =>
+                    [
+                      styles.submitButton,
+                      (pressed || loading) && styles.pressed,
+                    ] as any}
                 >
                   {loading ? (
-                    <ActivityIndicator size="small" color={theme.background} />
+                    <ActivityIndicator size="small" color="#ffffff" />
                   ) : (
-                    <ThemedText type="smallBold" style={[styles.submitButtonText, { color: theme.background }] as any}>
+                    <ThemedText type="smallBold" style={styles.submitButtonText}>
                       {mode === 'login' ? 'Sign In' : 'Create Account'}
                     </ThemedText>
                   )}
@@ -327,6 +328,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     alignItems: 'center',
     paddingBottom: BottomTabInset + Spacing.four,
+    paddingHorizontal: Spacing.three,
   },
   heroBanner: {
     width: '100%',
@@ -334,20 +336,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.four,
     marginBottom: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#3d3938',               // surface-dark-soft
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349',           // vanilla-green-3 accent stripe
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   heroSubtitle: {
     marginTop: Spacing.one,
+    color: '#d0c5c0',                     // grey-2
   },
   formCard: {
     width: '100%',
     maxWidth: MaxContentWidth,
     padding: Spacing.four,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',               // surface-dark-soft
     ...Platform.select({
       web: { width: `calc(100% - ${Spacing.four * 2}px)` as any },
     }),
@@ -355,8 +367,8 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     marginBottom: Spacing.three,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128,128,128,0.15)',
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',         // surface-dark-soft
   },
   tabButton: {
     paddingVertical: Spacing.two,
@@ -368,54 +380,70 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.four,
   },
   statusBadge: {
-    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    backgroundColor: 'rgba(108,195,73,0.15)', // vanilla-green tint
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
-    borderRadius: Spacing.three,
+    borderRadius: 0,                      // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#6cc349',               // vanilla-green-3
     marginTop: Spacing.two,
   },
   errorBanner: {
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
-    borderColor: '#FF3B30',
+    backgroundColor: 'rgba(255,96,94,0.15)', // warning-red tint
+    borderColor: '#ff605e',               // warning-red
     borderWidth: 1,
     padding: Spacing.two,
-    borderRadius: Spacing.two,
+    borderRadius: 0,                      // 0px voxel doctrine
     marginBottom: Spacing.three,
   },
   errorText: {
-    color: '#FF3B30',
+    color: '#ff605e',                     // warning-red
   },
   inputGroup: {
     marginBottom: Spacing.three,
   },
   inputLabel: {
     marginBottom: Spacing.one,
-    fontSize: 13,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',                     // grey-2 eyebrow label
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderColor: '#898481',               // grey-soft
+    borderRadius: 0,                      // 0px voxel doctrine
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 14,
+    backgroundColor: '#262423',           // surface-mid
+    color: '#ede5e2',                     // grey-warm-1
+    height: 48,                           // text-input height per spec
     ...Platform.select({
       web: {
         outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
       },
     }),
   },
   submitButton: {
     width: '100%',
-    paddingVertical: Spacing.three,
-    borderRadius: Spacing.two,
+    paddingVertical: 15,                  // button-primary padding per spec
+    borderRadius: 0,                      // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,
+    backgroundColor: '#3c8527',           // vanilla-green-5 — primary button fill
+    borderWidth: 2,
+    borderColor: '#262423',               // surface-mid border per spec
   },
   submitButtonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.54,
     color: '#ffffff',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   pressed: {
     opacity: 0.7,

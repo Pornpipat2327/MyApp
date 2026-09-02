@@ -34,27 +34,34 @@ const styles = StyleSheet.create({
   small: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 500,
+    fontWeight: '400',
+    fontFamily: Platform.select({ web: 'var(--font-sans)', default: undefined }),
   },
   smallBold: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 700,
+    fontWeight: '700',
+    fontFamily: Platform.select({ web: 'var(--font-sans)', default: undefined }),
   },
   default: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: 500,
+    fontWeight: '400',
+    fontFamily: Platform.select({ web: 'var(--font-sans)', default: undefined }),
   },
   title: {
     fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontWeight: '400',
+    lineHeight: 43,           // lineHeight 0.9 per display-md spec
+    letterSpacing: -0.5,
+    fontFamily: Platform.select({ web: 'var(--font-display)', default: undefined }),
   },
   subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+    fontSize: 24,
+    lineHeight: 26,
+    fontWeight: '700',
+    letterSpacing: 0.96,
+    fontFamily: Platform.select({ web: 'var(--font-sans)', default: undefined }),
   },
   link: {
     lineHeight: 30,
@@ -63,11 +70,11 @@ const styles = StyleSheet.create({
   linkPrimary: {
     lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
+    color: '#6cc349',         // vanilla-green-3 — nav-link-hover accent
   },
   code: {
     fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
+    fontWeight: Platform.select({ android: '700' }) ?? '500',
     fontSize: 12,
   },
 });
