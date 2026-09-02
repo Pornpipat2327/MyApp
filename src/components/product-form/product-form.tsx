@@ -389,27 +389,31 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   errorBanner: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    backgroundColor: 'rgba(255, 96, 94, 0.15)',
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: '#ff605e',
     padding: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
   },
   errorText: {
-    color: '#FF3B30',
+    color: '#ff605e',
     fontSize: 13,
   },
   card: {
     padding: Spacing.four,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.three,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.1)',
+    borderBottomColor: '#3d3938',
     paddingBottom: Spacing.two,
   },
   imagePickerArea: {
@@ -419,17 +423,19 @@ const styles = StyleSheet.create({
     height: 140,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderRadius: 8,
+    borderColor: '#3d3938',
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#262423',
     justifyContent: 'center',
     alignItems: 'center',
   },
   previewContainer: {
     height: 180,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.2)',
+    borderColor: '#3d3938',
   },
   previewImage: {
     width: '100%',
@@ -442,19 +448,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fieldGroup: {
-    gap: 6,
+    gap: 4,
   },
   input: {
     borderWidth: 1,
+    borderColor: '#898481',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
     fontSize: 14,
+    backgroundColor: '#262423',
+    color: '#ede5e2',
+    height: 48,
   },
   textArea: {
     minHeight: 80,
@@ -468,8 +478,10 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
+    borderColor: '#3d3938',
+    backgroundColor: '#262423',
   },
   rowTwoCols: {
     flexDirection: 'row',
@@ -482,16 +494,20 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: Spacing.three,
-    borderWidth: 1,
-    borderRadius: 6,
+    paddingVertical: 14,
+    borderWidth: 2,
+    borderColor: '#3d3938',
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
   },
   submitBtn: {
     flex: 2,
-    paddingVertical: Spacing.three,
-    borderRadius: 6,
+    paddingVertical: 14,
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#3c8527', // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,6 +1,7 @@
 /**
  * @file cart-coupon-section.tsx
- * @description ส่วนใส่โค้ดคูปองส่วนลด แถบคูปองแนะนำ และการจัดการลบคูปอง
+ * @description ส่วนกรอกคูปองส่วนลดและแสดงคูปองที่แนะนำ สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Input (#262423), และ Button (#3c8527)
  */
 
 import React from 'react';
@@ -8,7 +9,6 @@ import { StyleSheet, View, TextInput, Pressable } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { Coupon, AVAILABLE_COUPONS } from '@/hooks/use-cart';
 
 interface CartCouponSectionProps {
@@ -28,70 +28,59 @@ export function CartCouponSection({
   appliedCoupon,
   feedback,
 }: CartCouponSectionProps) {
-  const theme = useTheme();
-
   return (
     <ThemedView type="backgroundElement" style={styles.container}>
       <ThemedText type="smallBold" style={styles.title}>
-        🎟️ โค้ดส่วนลด (Promo Code)
+        คูปองส่วนลด (Coupon Code)
       </ThemedText>
 
       {appliedCoupon ? (
-        /* เมื่อมีการใส่คูปองสำเร็จแล้ว */
-        <View style={[styles.appliedBox, { borderColor: '#34C759' }]}>
+        <View style={styles.appliedBox}>
           <View style={{ flex: 1 }}>
-            <ThemedText type="smallBold" style={{ color: '#34C759' }}>
-              ✓ ใช้งานโค้ด: {appliedCoupon.code}
+            <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
+              ✓ ใช้คูปอง: {appliedCoupon.code}
             </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
               {appliedCoupon.description}
             </ThemedText>
           </View>
           <Pressable onPress={onRemoveCoupon} style={styles.removeBtn}>
-            <ThemedText type="small" style={{ color: '#FF3B30' }}>
+            <ThemedText type="smallBold" style={{ color: '#ff605e', fontSize: 12 }}>
               ยกเลิก
             </ThemedText>
           </Pressable>
         </View>
       ) : (
-        /* ช่องกรอกโค้ดส่วนลด */
         <View style={styles.inputRow}>
           <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: theme.background,
-                color: theme.text,
-                borderColor: theme.border,
-              },
-            ]}
-            placeholder="ใส่โค้ดส่วนลด เช่น EXTREME10"
-            placeholderTextColor={theme.textSecondary}
-            autoCapitalize="characters"
+            style={styles.input}
+            placeholder="กรอกรหัสส่วนลด..."
+            placeholderTextColor="#898481"
             value={couponInput}
             onChangeText={onCouponInputChange}
+            autoCapitalize="characters"
           />
           <Pressable
             onPress={() => onApplyCoupon()}
             style={({ pressed }) => [
               styles.applyBtn,
-              { backgroundColor: '#6cc349' },
               pressed && styles.pressed,
             ]}
           >
-            <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+            <ThemedText type="smallBold" style={{ color: '#ffffff', fontSize: 13 }}>
               ใช้งาน
             </ThemedText>
           </Pressable>
         </View>
       )}
 
-      {/* ข้อความแจ้งเตือนสถานะคูปอง */}
+      {/* ข้อความผลลัพธ์การใช้งานคูปอง */}
       {feedback && (
         <ThemedText
           type="small"
           style={{
-            color: feedback.success ? '#34C759' : '#FF3B30',
+            color: feedback.success ? '#6cc349' : '#ff605e',
+            fontSize: 12,
             marginTop: 2,
           }}
         >
@@ -112,7 +101,6 @@ export function CartCouponSection({
                 onPress={() => onApplyCoupon(cp.code)}
                 style={({ pressed }) => [
                   styles.couponChip,
-                  { backgroundColor: theme.background, borderColor: theme.border },
                   pressed && styles.pressed,
                 ]}
               >
@@ -131,13 +119,18 @@ export function CartCouponSection({
 const styles = StyleSheet.create({
   container: {
     padding: Spacing.three,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.two,
+    marginTop: Spacing.two,
   },
   title: {
-    fontSize: 14,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
   },
   inputRow: {
     flexDirection: 'row',
@@ -146,23 +139,31 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    fontSize: 13,
+    borderColor: '#898481',
+    borderRadius: 0, // 0px voxel doctrine
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 14,
+    backgroundColor: '#262423',
+    color: '#ede5e2',
   },
   applyBtn: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 0, // 0px voxel doctrine
     justifyContent: 'center',
-    borderRadius: 4,
+    alignItems: 'center',
+    backgroundColor: '#3c8527', // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   appliedBox: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
+    borderColor: '#6cc349',
     padding: Spacing.two,
-    borderRadius: 6,
-    backgroundColor: 'rgba(52, 199, 89, 0.08)',
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: 'rgba(108, 195, 73, 0.15)',
   },
   removeBtn: {
     paddingHorizontal: 8,
@@ -174,14 +175,18 @@ const styles = StyleSheet.create({
   },
   chipsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: Spacing.one,
+    marginTop: Spacing.one,
   },
   couponChip: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 3,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    borderColor: '#6cc349',
+    backgroundColor: '#262423',
   },
   pressed: {
     opacity: 0.7,

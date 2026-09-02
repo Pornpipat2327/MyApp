@@ -1,6 +1,7 @@
 /**
  * @file cart-summary-card.tsx
- * @description การ์ดสรุปยอดเงินในตะกร้าสินค้า และปุ่มไปยังหน้าชำระเงิน (Checkout)
+ * @description การ์ดสรุปยอดเงินในตะกร้าสินค้า สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Primary Button (#3c8527), และ Accent Voltage (#6cc349)
  */
 
 import React from 'react';
@@ -32,19 +33,12 @@ export function CartSummaryCard({
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
       <ThemedText type="smallBold" style={styles.title}>
-        สรุปยอดคำสั่งซื้อ
+        สรุปคำสั่งซื้อ (Order Summary)
       </ThemedText>
 
       <View style={styles.row}>
         <ThemedText type="small" themeColor="textSecondary">
-          จำนวนสินค้า
-        </ThemedText>
-        <ThemedText type="smallBold">{totalItems} ชิ้น</ThemedText>
-      </View>
-
-      <View style={styles.row}>
-        <ThemedText type="small" themeColor="textSecondary">
-          ยอดรวมสินค้า (Subtotal)
+          ยอดรวมสินค้า ({totalItems} ชิ้น)
         </ThemedText>
         <ThemedText type="smallBold">${subtotal.toFixed(2)}</ThemedText>
       </View>
@@ -54,16 +48,16 @@ export function CartSummaryCard({
           ค่าจัดส่ง
         </ThemedText>
         <ThemedText type="smallBold">
-          {shippingFee === 0 ? 'ส่งฟรี (Free)' : `$${shippingFee.toFixed(2)}`}
+          {shippingFee === 0 ? 'ฟรี (Free)' : `$${shippingFee.toFixed(2)}`}
         </ThemedText>
       </View>
 
       {discount > 0 && (
         <View style={styles.row}>
-          <ThemedText type="small" style={{ color: '#34C759' }}>
+          <ThemedText type="small" style={{ color: '#6cc349' }}>
             ส่วนลดจากคูปอง
           </ThemedText>
-          <ThemedText type="smallBold" style={{ color: '#34C759' }}>
+          <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
             -${discount.toFixed(2)}
           </ThemedText>
         </View>
@@ -85,11 +79,10 @@ export function CartSummaryCard({
         disabled={totalItems === 0}
         style={({ pressed }) => [
           styles.checkoutBtn,
-          { backgroundColor: '#6cc349' },
           (pressed || totalItems === 0) && { opacity: 0.7 },
         ]}
       >
-        <ThemedText type="smallBold" style={{ color: '#ffffff', fontSize: 16 }}>
+        <ThemedText type="smallBold" style={{ color: '#ffffff', fontSize: 15 }}>
           ดำเนินการสั่งซื้อ (Checkout)
         </ThemedText>
       </Pressable>
@@ -100,13 +93,17 @@ export function CartSummaryCard({
 const styles = StyleSheet.create({
   card: {
     padding: Spacing.four,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.two,
   },
   title: {
-    fontSize: 16,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
     marginBottom: Spacing.one,
   },
   row: {
@@ -121,9 +118,12 @@ const styles = StyleSheet.create({
   },
   checkoutBtn: {
     paddingVertical: Spacing.three,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,
+    backgroundColor: '#3c8527', // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
   },
 });

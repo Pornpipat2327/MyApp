@@ -1,7 +1,7 @@
 /**
  * @file login.tsx
- * @description หน้าจอเข้าสู่ระบบและสมัครสมาชิก (Authentication Screen)
- * รองรับการเข้าสู่ระบบแบบ Role-based (User / Admin) พร้อมบันทึก Token และข้อมูลลง LocalStorage
+ * @description หน้าจอเข้าสู่ระบบและสมัครสมาชิก สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Canvas (#313131), Hero Banner Accent (#6cc349), และ Button Fill (#3c8527)
  */
 
 import React, { useState } from 'react';
@@ -36,14 +36,11 @@ export default function LoginScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // โหลดผู้ใช้ปัจจุบันแบบ Lazy Initializer เพื่อขจัด cascading setState ใน useEffect
+  // ดึงข้อมูลผู้ใช้ปัจจุบันแบบ Lazy Initializer ป้องกัน cascading setState ใน useEffect
   const [user, setUser] = useState<{ username: string; role: string } | null>(() => {
     return getStorageJSON('user', null);
   });
 
-  /**
-   * ดำเนินการเข้าสู่ระบบ
-   */
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
       setErrorMsg('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
@@ -93,9 +90,6 @@ export default function LoginScreen() {
     }
   };
 
-  /**
-   * ดำเนินการลงทะเบียนผู้ใช้ใหม่
-   */
   const handleRegister = async () => {
     if (!username.trim() || !password.trim()) {
       setErrorMsg('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
@@ -126,15 +120,12 @@ export default function LoginScreen() {
         setErrorMsg(data.message || 'การลงทะเบียนไม่สำเร็จ ชื่อผู้ใช้นี้อาจมีอยู่ในระบบแล้ว');
       }
     } catch {
-      setErrorMsg('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      setErrorMsg('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ');
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * ดำเนินการออกจากระบบ
-   */
   const handleLogout = () => {
     if (Platform.OS === 'web') {
       removeStorageItem('user');
@@ -156,154 +147,175 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {user ? (
-            /* กรณีที่เข้าสู่ระบบอยู่แล้ว */
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <View style={styles.avatarCircle}>
+          {/* Header Banner - Minecraft Voxel Accordion with Green Stripe */}
+          <ThemedView type="backgroundElement" style={styles.heroBanner}>
+            <ThemedText type="subtitle" style={styles.heroTitle}>
+              {mode === 'login' ? 'Welcome Back' : 'Join ExtremeKeys'}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.heroSubtitle}>
+              {mode === 'login'
+                ? 'Sign in to access your administrative panel & account settings.'
+                : 'Create an account to manage custom keyboards and orders.'}
+            </ThemedText>
+          </ThemedView>
+
+          {/* Form Card */}
+          <ThemedView type="backgroundElement" style={styles.formCard}>
+            {user ? (
+              <View style={styles.loggedInBox}>
                 <SymbolView
-                  tintColor="#6cc349"
+                  tintColor={theme.text}
                   name={{ ios: 'person.crop.circle.fill', android: 'account_circle', web: 'account_circle' } as any}
                   size={64}
                 />
-              </View>
-
-              <ThemedText type="subtitle" style={{ textAlign: 'center' }}>
-                สวัสดี, {user.username} 👋
-              </ThemedText>
-
-              <View style={[styles.roleBadge, { backgroundColor: user.role === 'admin' ? '#FF9500' : '#007AFF' }]}>
-                <ThemedText style={styles.roleText}>
-                  สิทธิ์การใช้งาน: {user.role.toUpperCase()}
+                <ThemedText type="subtitle" style={{ marginTop: Spacing.two }}>
+                  {user.username}
                 </ThemedText>
-              </View>
-
-              <View style={styles.userActionsRow}>
-                <Pressable
-                  onPress={() => router.push('/product')}
-                  style={[styles.primaryBtn, { backgroundColor: '#6cc349' }]}
-                >
-                  <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-                    ไปยังหน้าร้านค้า
+                <View style={styles.statusBadge}>
+                  <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
+                    Active Session ({user.role})
                   </ThemedText>
-                </Pressable>
-
-                <Pressable onPress={handleLogout} style={styles.logoutBtn}>
-                  <ThemedText type="smallBold" style={{ color: '#FF3B30' }}>
-                    ออกจากระบบ (Sign Out)
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </ThemedView>
-          ) : (
-            /* ฟอร์มเข้าสู่ระบบ / ลงทะเบียน */
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <View style={styles.tabsHeader}>
-                <Pressable
-                  onPress={() => {
-                    setMode('login');
-                    setErrorMsg(null);
-                  }}
-                  style={[styles.tabToggle, mode === 'login' && styles.activeTabToggle]}
-                >
-                  <ThemedText
-                    type="smallBold"
-                    style={{ color: mode === 'login' ? '#6cc349' : theme.textSecondary }}
-                  >
-                    เข้าสู่ระบบ (Sign In)
-                  </ThemedText>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => {
-                    setMode('register');
-                    setErrorMsg(null);
-                  }}
-                  style={[styles.tabToggle, mode === 'register' && styles.activeTabToggle]}
-                >
-                  <ThemedText
-                    type="smallBold"
-                    style={{ color: mode === 'register' ? '#6cc349' : theme.textSecondary }}
-                  >
-                    สมัครสมาชิก (Register)
-                  </ThemedText>
-                </Pressable>
-              </View>
-
-              {/* ข้อความแจ้งเตือน */}
-              {errorMsg && (
-                <View style={styles.errorBox}>
-                  <ThemedText style={{ color: '#FF3B30', fontSize: 13 }}>⚠️ {errorMsg}</ThemedText>
                 </View>
-              )}
 
-              {successMsg && (
-                <View style={styles.successBox}>
-                  <ThemedText style={{ color: '#34C759', fontSize: 13 }}>✓ {successMsg}</ThemedText>
-                </View>
-              )}
-
-              {/* ข้อมูลใบ้บัญชีทดสอบ */}
-              <View style={[styles.hintBox, { backgroundColor: theme.background }]}>
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
-                  💡 บัญชีทดสอบ Admin: <ThemedText type="smallBold">admin / adminpassword</ThemedText>
-                </ThemedText>
-              </View>
-
-              {/* ฟิลด์กรอกข้อมูล */}
-              <View style={styles.formGroup}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  ชื่อผู้ใช้ (Username)
-                </ThemedText>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: theme.background, color: theme.text, borderColor: theme.border },
+                <Pressable
+                  onPress={handleLogout}
+                  style={({ pressed }) => [
+                    styles.submitButton,
+                    { backgroundColor: '#ff605e', marginTop: Spacing.four },
+                    pressed && styles.pressed,
                   ]}
-                  placeholder="ชื่อบัญชีของคุณ"
-                  placeholderTextColor={theme.textSecondary}
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  รหัสผ่าน (Password)
-                </ThemedText>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: theme.background, color: theme.text, borderColor: theme.border },
-                  ]}
-                  placeholder="รหัสผ่าน"
-                  placeholderTextColor={theme.textSecondary}
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
-
-              {/* ปุ่มดำเนินการ */}
-              <Pressable
-                onPress={mode === 'login' ? handleLogin : handleRegister}
-                disabled={loading}
-                style={[
-                  styles.primaryBtn,
-                  { backgroundColor: '#6cc349' },
-                  loading && { opacity: 0.7 },
-                ]}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <ThemedText type="smallBold" style={{ color: '#ffffff', fontSize: 15 }}>
-                    {mode === 'login' ? 'เข้าสู่ระบบ' : 'สร้างบัญชีใหม่'}
+                >
+                  <ThemedText type="smallBold" style={styles.submitButtonText}>
+                    Sign Out
                   </ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                {/* Tabs for Login / Register */}
+                <View style={styles.tabContainer}>
+                  <Pressable
+                    onPress={() => {
+                      setMode('login');
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                    }}
+                    style={[
+                      styles.tabButton,
+                      mode === 'login' && { borderBottomColor: theme.text, borderBottomWidth: 2 },
+                    ]}
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      style={{ color: mode === 'login' ? theme.text : theme.textSecondary }}
+                    >
+                      Sign In
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => {
+                      setMode('register');
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                    }}
+                    style={[
+                      styles.tabButton,
+                      mode === 'register' && { borderBottomColor: theme.text, borderBottomWidth: 2 },
+                    ]}
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      style={{ color: mode === 'register' ? theme.text : theme.textSecondary }}
+                    >
+                      Register
+                    </ThemedText>
+                  </Pressable>
+                </View>
+
+                {/* Error Banner */}
+                {errorMsg && (
+                  <View style={styles.errorBanner}>
+                    <ThemedText style={styles.errorText}>{errorMsg}</ThemedText>
+                  </View>
                 )}
-              </Pressable>
-            </ThemedView>
-          )}
+
+                {/* Success Banner */}
+                {successMsg && (
+                  <View
+                    style={[
+                      styles.errorBanner,
+                      { backgroundColor: 'rgba(52, 199, 89, 0.15)', borderColor: '#34C759' },
+                    ]}
+                  >
+                    <ThemedText style={{ color: '#34C759', fontSize: 13 }}>{successMsg}</ThemedText>
+                  </View>
+                )}
+
+                {/* Username Input */}
+                <View style={styles.inputGroup}>
+                  <ThemedText type="smallBold" style={styles.inputLabel}>
+                    Username
+                  </ThemedText>
+                  <TextInput
+                    placeholder="Enter username"
+                    placeholderTextColor={theme.textSecondary}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    style={[
+                      styles.input,
+                      {
+                        color: theme.text,
+                        backgroundColor: '#262423',
+                        borderColor: '#898481',
+                      },
+                    ]}
+                  />
+                </View>
+
+                {/* Password Input */}
+                <View style={styles.inputGroup}>
+                  <ThemedText type="smallBold" style={styles.inputLabel}>
+                    Password
+                  </ThemedText>
+                  <TextInput
+                    placeholder="Enter password"
+                    placeholderTextColor={theme.textSecondary}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    style={[
+                      styles.input,
+                      {
+                        color: theme.text,
+                        backgroundColor: '#262423',
+                        borderColor: '#898481',
+                      },
+                    ]}
+                  />
+                </View>
+
+                {/* Submit Button */}
+                <Pressable
+                  onPress={mode === 'login' ? handleLogin : handleRegister}
+                  disabled={loading}
+                  style={({ pressed }) => [
+                    styles.submitButton,
+                    (pressed || loading) && styles.pressed,
+                  ]}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <ThemedText type="smallBold" style={styles.submitButtonText}>
+                      {mode === 'login' ? 'Sign In' : 'Create Account'}
+                    </ThemedText>
+                  )}
+                </Pressable>
+              </>
+            )}
+          </ThemedView>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -321,91 +333,126 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    alignItems: 'center',
+    paddingBottom: BottomTabInset + Spacing.four,
+    paddingHorizontal: Spacing.three,
+  },
+  heroBanner: {
+    width: '100%',
     maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-    padding: Spacing.four,
-    paddingBottom: BottomTabInset + Spacing.six,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '80%',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.four,
+    marginBottom: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#3d3938', // surface-dark-soft
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349', // vanilla-green-3 accent stripe
   },
-  card: {
-    maxWidth: 440,
-    width: '100%',
-    padding: Spacing.five,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
-    gap: Spacing.three,
-  },
-  tabsHeader: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.15)',
-    marginBottom: Spacing.two,
-  },
-  tabToggle: {
-    flex: 1,
-    paddingVertical: Spacing.two,
-    alignItems: 'center',
-  },
-  activeTabToggle: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#6cc349',
-  },
-  avatarCircle: {
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  roleBadge: {
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  roleText: {
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: '800',
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
-  userActionsRow: {
-    gap: Spacing.two,
+  heroSubtitle: {
+    marginTop: Spacing.one,
+    color: '#d0c5c0', // grey-2
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    padding: Spacing.four,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938', // surface-dark-soft
+    ...Platform.select({
+      web: { width: `calc(100% - ${Spacing.four * 2}px)` as any },
+    }),
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: Spacing.three,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938', // surface-dark-soft
+  },
+  tabButton: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    marginRight: Spacing.two,
+  },
+  loggedInBox: {
+    alignItems: 'center',
+    paddingVertical: Spacing.four,
+  },
+  statusBadge: {
+    backgroundColor: 'rgba(108,195,73,0.15)', // vanilla-green tint
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#6cc349', // vanilla-green-3
     marginTop: Spacing.two,
   },
-  hintBox: {
+  errorBanner: {
+    backgroundColor: 'rgba(255,96,94,0.15)', // warning-red tint
+    borderColor: '#ff605e', // warning-red
+    borderWidth: 1,
     padding: Spacing.two,
-    borderRadius: 4,
+    borderRadius: 0, // 0px voxel doctrine
+    marginBottom: Spacing.three,
   },
-  errorBox: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-    padding: Spacing.two,
-    borderRadius: 4,
+  errorText: {
+    color: '#ff605e', // warning-red
   },
-  successBox: {
-    backgroundColor: 'rgba(52, 199, 89, 0.1)',
-    padding: Spacing.two,
-    borderRadius: 4,
+  inputGroup: {
+    marginBottom: Spacing.three,
   },
-  formGroup: {
-    gap: 6,
+  inputLabel: {
+    marginBottom: Spacing.one,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#d0c5c0', // grey-2 eyebrow label
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
   },
   input: {
     borderWidth: 1,
+    borderColor: '#898481', // grey-soft
+    borderRadius: 0, // 0px voxel doctrine
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: 6,
     fontSize: 14,
+    backgroundColor: '#262423', // surface-mid
+    color: '#ede5e2', // grey-warm-1
+    height: 48, // text-input height per spec
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+        fontFamily: 'var(--font-sans)',
+      },
+    }),
   },
-  primaryBtn: {
-    paddingVertical: Spacing.three,
-    borderRadius: 6,
+  submitButton: {
+    width: '100%',
+    paddingVertical: 15, // button-primary padding per spec
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: Spacing.two,
+    backgroundColor: '#3c8527', // vanilla-green-5 — primary button fill
+    borderWidth: 2,
+    borderColor: '#262423', // surface-mid border per spec
   },
-  logoutBtn: {
-    paddingVertical: Spacing.two,
-    alignItems: 'center',
+  submitButtonText: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.54,
+    color: '#ffffff',
+    ...Platform.select({ web: { fontFamily: 'var(--font-sans)' } }),
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

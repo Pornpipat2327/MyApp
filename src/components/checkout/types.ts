@@ -3,6 +3,8 @@
  * @description Type definitions สำหรับโมดูล Checkout
  */
 
+import { ShippingAddress } from '@/types/order';
+
 export type {
   Order,
   ShippingAddress,
@@ -10,3 +12,6 @@ export type {
   PaymentStatus,
   OrderStatus,
 } from '@/types/order';
+
+export type ShippingAddressValues = ShippingAddress;
+export type ShippingFormValues = ShippingAddress;

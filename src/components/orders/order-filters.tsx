@@ -1,6 +1,7 @@
 /**
  * @file order-filters.tsx
- * @description แถบกรองสถานะคำสั่งซื้อ (Filter Tabs) และช่องค้นหาคำสั่งซื้อ (Search Bar)
+ * @description แถบค้นหาและตัวกรองสถานะคำสั่งซื้อ สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Search Box (#262423), และ Active Tab (#3c8527)
  */
 
 import React from 'react';
@@ -10,26 +11,21 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-interface FilterTab {
-  id: string;
-  label: string;
-}
-
-const FILTER_TABS: FilterTab[] = [
-  { id: 'all', label: 'ทั้งหมด (All)' },
-  { id: 'pending', label: 'รอชำระ' },
-  { id: 'processing', label: 'เตรียมจัดส่ง' },
-  { id: 'shipped', label: 'จัดส่งแล้ว' },
-  { id: 'delivered', label: 'สำเร็จ' },
-];
-
-interface OrderFiltersProps {
+export interface OrderFiltersProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
   selectedFilter: string;
   onSelectFilter: (filterId: string) => void;
   counts: Record<string, number>;
 }
+
+const FILTER_TABS = [
+  { id: 'all', label: 'ทั้งหมด' },
+  { id: 'pending', label: 'รอชำระ' },
+  { id: 'processing', label: 'เตรียมจัดส่ง' },
+  { id: 'shipped', label: 'จัดส่งแล้ว' },
+  { id: 'delivered', label: 'สำเร็จ' },
+];
 
 export function OrderFilters({
   searchQuery,
@@ -43,16 +39,16 @@ export function OrderFilters({
   return (
     <View style={styles.container}>
       {/* ช่องค้นหาคำสั่งซื้อ */}
-      <View style={[styles.searchBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <View style={styles.searchBox}>
         <SymbolView
           tintColor={theme.textSecondary}
           name={{ ios: 'magnifyingglass', android: 'search', web: 'search' } as any}
-          size={16}
+          size={18}
         />
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
-          placeholder="ค้นหาตามเลขที่ออเดอร์, ผู้รับ, หมายเลขพัสดุ..."
-          placeholderTextColor={theme.textSecondary}
+          placeholder="ค้นหา Order ID, ผู้รับ หรือ เลขพัสดุ..."
+          placeholderTextColor="#898481"
           value={searchQuery}
           onChangeText={onSearchChange}
         />
@@ -83,16 +79,16 @@ export function OrderFilters({
               style={[
                 styles.tabButton,
                 {
-                  backgroundColor: isActive ? '#6cc349' : theme.backgroundElement,
-                  borderColor: isActive ? '#6cc349' : theme.border,
+                  backgroundColor: isActive ? '#3c8527' : '#262423',
+                  borderColor: isActive ? '#6cc349' : '#3d3938',
                 },
               ]}
             >
               <ThemedText
                 type="smallBold"
                 style={{
-                  color: isActive ? '#ffffff' : theme.text,
-                  fontSize: 13,
+                  color: isActive ? '#ffffff' : '#d0c5c0',
+                  fontSize: 12,
                 }}
               >
                 {tab.label} ({count})
@@ -114,10 +110,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
+    borderColor: '#3d3938',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     gap: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#262423',
   },
   searchInput: {
     flex: 1,
@@ -132,7 +130,7 @@ const styles = StyleSheet.create({
   tabButton: {
     paddingHorizontal: Spacing.three,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
   },
 });

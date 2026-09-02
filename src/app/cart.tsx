@@ -1,7 +1,7 @@
 /**
  * @file cart.tsx
- * @description หน้าจอแสดงรายการตะกร้าสินค้า (Shopping Cart Screen)
- * ประกอบด้วยรายการสินค้าที่เลือก, ตัวปรับจำนวน, ฟอร์มใส่คูปองส่วนลด, สรุปยอดเงิน และปุ่มไปชำระเงิน
+ * @description หน้าจอแสดงรายการตะกร้าสินค้า สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Canvas (#313131), Eyebrow Headers, และ Primary Button (#3c8527)
  */
 
 import React, { useState } from 'react';
@@ -63,7 +63,7 @@ export default function CartScreen() {
         <TopHeader />
 
         {/* แถบหัวเรื่องและปุ่มย้อนกลับ */}
-        <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
+        <View style={[styles.headerBar, { borderBottomColor: '#3d3938' }]}>
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.push('/product' as any))}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
@@ -73,10 +73,10 @@ export default function CartScreen() {
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
               size={20}
             />
-            <ThemedText type="smallBold">ย้อนกลับ</ThemedText>
+            <ThemedText type="smallBold">Back</ThemedText>
           </Pressable>
           <ThemedText type="smallBold" style={styles.headerTitle}>
-            ตะกร้าสินค้าของคุณ ({totalItems})
+            Shopping Cart ({totalItems})
           </ThemedText>
           <View style={{ width: 60 }} />
         </View>
@@ -95,7 +95,7 @@ export default function CartScreen() {
                 size={64}
               />
               <ThemedText type="subtitle" style={{ marginTop: Spacing.three }}>
-                ตะกร้าสินค้าว่างเปล่า
+                Your Cart is Empty
               </ThemedText>
               <ThemedText
                 type="small"
@@ -108,12 +108,11 @@ export default function CartScreen() {
                 onPress={() => router.push('/product')}
                 style={({ pressed }) => [
                   styles.browseBtn,
-                  { backgroundColor: '#6cc349' },
                   pressed && styles.pressed,
                 ]}
               >
                 <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-                  เลือกซื้อสินค้า (Explore Store)
+                  Explore Store
                 </ThemedText>
               </Pressable>
             </ThemedView>
@@ -123,11 +122,11 @@ export default function CartScreen() {
               <View style={styles.itemsColumn}>
                 <View style={styles.sectionHeadingRow}>
                   <ThemedText type="smallBold" style={styles.sectionTitle}>
-                    รายการสินค้าในตะกร้า ({totalItems} ชิ้น)
+                    ITEMS IN CART ({totalItems})
                   </ThemedText>
                   <Pressable onPress={clearCart} style={({ pressed }) => pressed && styles.pressed}>
-                    <ThemedText type="small" style={{ color: '#FF3B30' }}>
-                      ล้างตะกร้าทั้งหมด
+                    <ThemedText type="small" style={{ color: '#ff605e' }}>
+                      Clear All
                     </ThemedText>
                   </Pressable>
                 </View>
@@ -208,17 +207,20 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     padding: Spacing.six,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     marginTop: Spacing.four,
   },
   browseBtn: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#3c8527',
+    borderWidth: 2,
+    borderColor: '#262423',
     marginTop: Spacing.three,
   },
   mainWrapper: {
@@ -241,7 +243,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
   },
   pressed: {
     opacity: 0.7,

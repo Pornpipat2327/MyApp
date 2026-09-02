@@ -193,16 +193,16 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     padding: Spacing.four,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     alignItems: 'center',
     gap: Spacing.two,
   },
   iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 0, // 0px voxel doctrine
     justifyContent: 'center',
     alignItems: 'center',
   },

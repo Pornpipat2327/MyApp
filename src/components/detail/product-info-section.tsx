@@ -1,96 +1,156 @@
 /**
  * @file product-info-section.tsx
- * @description คอมโพเนนต์แสดงข้อมูลหลักของสินค้า (ชื่อ, ราคา, คะแนนรีวิว, จำนวนสต็อก, สถานที่จัดเก็บ, คำอธิบาย)
+ * @description รายละเอียดสินค้าและ Specifications Grid สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dungeons Gold Price (#ffc42b), Specifications 2-Column Grid (#3d3938)
  */
 
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 interface ProductInfoSectionProps {
   name: string;
+  category?: string;
   price: number | string;
   rating?: number | string;
-  stock?: number | string;
+  stock?: number;
   location?: string;
   description?: string;
 }
 
 export function ProductInfoSection({
   name,
+  category = 'General',
   price,
   rating = 4.5,
   stock = 0,
   location,
   description,
 }: ProductInfoSectionProps) {
+  const theme = useTheme();
   const numericPrice = Number(price) || 0;
+  const numericRating = Number(rating) || 4.5;
   const numericStock = Number(stock) || 0;
-  const isOutOfStock = numericStock <= 0;
 
   return (
     <View style={styles.container}>
-      {/* ชื่อสินค้า */}
+      {/* Category & Rating Row */}
+      <View style={styles.metaRow}>
+        <View style={styles.categoryBadge}>
+          <ThemedText style={styles.categoryBadgeText}>{category}</ThemedText>
+        </View>
+        <View style={styles.ratingBox}>
+          <ThemedText style={styles.starText}>★</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={{ marginLeft: 4 }}>
+            {numericRating.toFixed(1)} / 5.0
+          </ThemedText>
+        </View>
+      </View>
+
+      {/* Product Name */}
       <ThemedText type="subtitle" style={styles.productName}>
         {name}
       </ThemedText>
 
-      {/* แถวแสดงราคาและคะแนนรีวิว */}
-      <View style={styles.priceRow}>
-        <ThemedText type="subtitle" style={styles.priceText}>
-          ${numericPrice.toFixed(2)}
-        </ThemedText>
-        <View style={styles.ratingBadge}>
-          <ThemedText style={styles.starIcon}>★</ThemedText>
-          <ThemedText type="smallBold" style={{ fontSize: 13 }}>
-            {Number(rating).toFixed(1)} / 5.0
+      {/* Price */}
+      <ThemedText style={styles.priceText}>
+        ${numericPrice.toFixed(2)}
+      </ThemedText>
+
+      {/* Divider */}
+      <View style={[styles.divider, { backgroundColor: '#3d3938' }]} />
+
+      {/* Specifications Grid */}
+      <ThemedText type="smallBold" style={styles.sectionLabel}>
+        Specifications
+      </ThemedText>
+      <View style={styles.specsGrid}>
+        <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+          <SymbolView
+            tintColor="#007AFF"
+            name={{ ios: 'tag', android: 'sell', web: 'sell' } as any}
+            size={20}
+          />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>
+            Price
+          </ThemedText>
+          <ThemedText type="smallBold" style={[styles.specValue, { color: '#007AFF' }]}>
+            ${numericPrice.toFixed(2)}
           </ThemedText>
         </View>
-      </View>
 
-      {/* สเปกสินค้า: สต็อก และ สถานที่ */}
-      <ThemedView type="backgroundElement" style={styles.specsCard}>
-        <View style={styles.specItem}>
-          <ThemedText type="small" themeColor="textSecondary">
-            สถานะสต็อก:
+        <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+          <SymbolView
+            tintColor="#FF9500"
+            name={{ ios: 'square.grid.2x2', android: 'category', web: 'category' } as any}
+            size={20}
+          />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>
+            Category
           </ThemedText>
-          <ThemedText
-            type="smallBold"
-            style={{
-              color: isOutOfStock ? '#FF3B30' : '#34C759',
-            }}
-          >
-            {isOutOfStock ? 'สินค้าหมด (Out of Stock)' : `พร้อมส่ง (${numericStock} ชิ้น)`}
+          <ThemedText type="smallBold" style={styles.specValue} numberOfLines={1}>
+            {category}
+          </ThemedText>
+        </View>
+
+        <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+          <SymbolView
+            tintColor="#ffc42b"
+            name={{ ios: 'star.fill', android: 'star', web: 'star' } as any}
+            size={20}
+          />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>
+            Rating
+          </ThemedText>
+          <ThemedText type="smallBold" style={[styles.specValue, { color: '#ffc42b' }]}>
+            {numericRating.toFixed(1)} / 5
+          </ThemedText>
+        </View>
+
+        <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+          <SymbolView
+            tintColor="#30D158"
+            name={{ ios: 'shippingbox', android: 'inventory', web: 'inventory' } as any}
+            size={20}
+          />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>
+            Stock
+          </ThemedText>
+          <ThemedText type="smallBold" style={[styles.specValue, { color: '#30D158' }]}>
+            {numericStock} units
           </ThemedText>
         </View>
 
         {location ? (
-          <View style={styles.specItem}>
-            <ThemedText type="small" themeColor="textSecondary">
-              คลังจัดเก็บ:
+          <View style={[styles.specItem, { backgroundColor: theme.background }]}>
+            <SymbolView
+              tintColor="#AF52DE"
+              name={{ ios: 'mappin.circle', android: 'location_on', web: 'location_on' } as any}
+              size={20}
+            />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.specLabel}>
+              Location
             </ThemedText>
-            <ThemedText type="smallBold">{location}</ThemedText>
+            <ThemedText type="smallBold" style={[styles.specValue, { color: '#AF52DE' }]} numberOfLines={1}>
+              {location}
+            </ThemedText>
           </View>
         ) : null}
-      </ThemedView>
-
-      {/* รายละเอียดสินค้า */}
-      <View style={styles.descSection}>
-        <ThemedText type="smallBold" style={styles.descTitle}>
-          รายละเอียดสินค้า (Description)
-        </ThemedText>
-        <ThemedText
-          type="small"
-          themeColor="textSecondary"
-          style={styles.descText}
-        >
-          {description && description.trim()
-            ? description
-            : 'ไม่มีคำอธิบายเพิ่มเติมสำหรับสินค้านี้'}
-        </ThemedText>
       </View>
+
+      {/* Divider */}
+      <View style={[styles.divider, { backgroundColor: '#3d3938' }]} />
+
+      {/* Description */}
+      <ThemedText type="smallBold" style={styles.sectionLabel}>
+        Description
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.descriptionText}>
+        {description || 'No description available for this product.'}
+      </ThemedText>
     </View>
   );
 }
@@ -99,52 +159,83 @@ const styles = StyleSheet.create({
   container: {
     gap: Spacing.three,
   },
-  productName: {
-    fontSize: 22,
-    lineHeight: 28,
-  },
-  priceRow: {
+  metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  priceText: {
-    color: '#6cc349',
-    fontSize: 26,
+  categoryBadge: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 4,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#6cc349',
+    backgroundColor: 'rgba(108, 195, 73, 0.12)',
   },
-  ratingBadge: {
+  categoryBadgeText: {
+    color: '#6cc349',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  ratingBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 204, 0, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
   },
-  starIcon: {
-    color: '#FFCC00',
-    fontSize: 14,
+  starText: {
+    color: '#ffc42b',
+    fontSize: 16,
   },
-  specsCard: {
-    padding: Spacing.three,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+  productName: {
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 28,
+    color: '#ffffff',
+  },
+  priceText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#ffc42b', // Dungeons Gold
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    color: '#d0c5c0',
+  },
+  specsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   specItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    width: '47%',
+    ...Platform.select({ web: { width: `calc(50% - ${Spacing.one}px)` as any } }),
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
+    padding: Spacing.three,
+    gap: 4,
   },
-  descSection: {
-    gap: Spacing.one,
+  specLabel: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#d0c5c0',
   },
-  descTitle: {
+  specValue: {
     fontSize: 15,
+    fontWeight: '700',
   },
-  descText: {
-    fontSize: 14,
-    lineHeight: 22,
+  descriptionText: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#d0c5c0',
   },
 });

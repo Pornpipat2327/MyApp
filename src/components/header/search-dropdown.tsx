@@ -184,8 +184,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     marginTop: 6,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
+    borderColor: '#3d3938',
     maxHeight: 340,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -208,7 +209,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
   },
   chipsRow: {
     flexDirection: 'row',
@@ -221,14 +226,18 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 14,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
+    borderColor: '#3d3938',
+    backgroundColor: '#262423',
   },
   popularChip: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 14,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
+    borderColor: '#3d3938',
+    backgroundColor: '#262423',
   },
   productsList: {
     gap: 4,
@@ -238,12 +247,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     paddingVertical: 8,
-    borderBottomWidth: 0.5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3d3938',
   },
   productThumbBox: {
     width: 36,
     height: 36,
-    borderRadius: 4,
+    borderRadius: 0, // 0px voxel doctrine
     overflow: 'hidden',
   },
   productThumb: {

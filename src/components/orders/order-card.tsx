@@ -1,6 +1,7 @@
 /**
  * @file order-card.tsx
- * @description การ์ดแสดงรายละเอียดคำสั่งซื้อเดี่ยว พร้อมรายการสินค้า ข้อมูลการจัดส่ง และแผงเปลี่ยนสถานะสำหรับ Admin
+ * @description การ์ดแสดงผลคำสั่งซื้อ สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Surface Mid Info Bar (#262423), และ Status Control Buttons (#3c8527)
  */
 
 import React from 'react';
@@ -10,64 +11,56 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Order, OrderStatus } from '@/types/order';
-import { OrderStatusBadge } from './order-status-badge';
+import { OrderStatusBadge } from '@/components/orders/order-status-badge';
 import { getImageSource } from '@/utils/image';
 
 interface OrderCardProps {
   order: Order;
   isAdmin: boolean;
-  onUpdateStatus?: (orderId: string, newStatus: OrderStatus) => void;
+  onUpdateStatus: (orderId: string, newStatus: OrderStatus) => void;
 }
 
 export function OrderCard({ order, isAdmin, onUpdateStatus }: OrderCardProps) {
   const theme = useTheme();
 
-  const formattedDate = new Date(order.createdAt).toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      {/* ส่วนหัว: รหัสออเดอร์ วันที่ และสถานะ */}
+      {/* ส่วนหัวการ์ด: รหัสออเดอร์ และ สถานะ */}
       <View style={styles.cardHeader}>
         <View>
-          <ThemedText type="smallBold" style={{ color: '#6cc349', fontSize: 16 }}>
-            #{order.id}
+          <ThemedText type="smallBold" style={{ fontSize: 16 }}>
+            {order.id}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {formattedDate}
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+            {new Date(order.createdAt).toLocaleString('th-TH')}
           </ThemedText>
         </View>
+
         <OrderStatusBadge status={order.status} />
       </View>
 
-      {/* ข้อมูลผู้สั่งและเลขพัสดุ */}
-      <View style={[styles.infoBar, { backgroundColor: theme.background }]}>
-        <ThemedText type="small">
-          👤 <ThemedText type="smallBold">{order.shippingAddress.recipientName}</ThemedText> ({order.username})
+      {/* แถบข้อมูลลูกค้าและที่อยู่จัดส่ง */}
+      <View style={styles.infoBar}>
+        <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
+          👤 ผู้สั่งซื้อ: <ThemedText type="smallBold">{order.shippingAddress.recipientName}</ThemedText> (
+          {order.username})
         </ThemedText>
-        {order.trackingNumber && (
-          <ThemedText type="small" themeColor="textSecondary">
-            📦 พัสดุ: <ThemedText type="smallBold">{order.trackingNumber}</ThemedText>
-          </ThemedText>
-        )}
+        <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
+          📍 {order.shippingAddress.city} {order.shippingAddress.postalCode}
+        </ThemedText>
       </View>
 
-      {/* รายการสินค้าที่สั่ง */}
+      {/* รายการสินค้าในออเดอร์ */}
       <View style={styles.itemsList}>
         {order.items.map((item, idx) => {
           const imgSrc = getImageSource(item.image);
           return (
-            <View key={`${item.id}-${idx}`} style={styles.itemRow}>
+            <View key={item.id ?? idx} style={styles.itemRow}>
               <View style={styles.thumbnailBox}>
                 {imgSrc ? (
                   <Image source={imgSrc} style={styles.thumbnail} resizeMode="cover" />
                 ) : (
-                  <View style={[styles.thumbnail, { backgroundColor: theme.border }]} />
+                  <View style={[styles.thumbnail, { backgroundColor: theme.background }]} />
                 )}
               </View>
               <View style={{ flex: 1 }}>
@@ -75,7 +68,7 @@ export function OrderCard({ order, isAdmin, onUpdateStatus }: OrderCardProps) {
                   {item.name}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {item.category || 'General'} x {item.quantity}
+                  จำนวน: {item.quantity} ชิ้น
                 </ThemedText>
               </View>
               <ThemedText type="smallBold">
@@ -86,31 +79,34 @@ export function OrderCard({ order, isAdmin, onUpdateStatus }: OrderCardProps) {
         })}
       </View>
 
-      {/* สรุปที่อยู่และยอดเงินสุทธิ */}
+      {/* แถบสรุปราคาด้านล่าง */}
       <View style={[styles.footerRow, { borderTopColor: theme.border }]}>
-        <View style={{ flex: 1 }}>
-          <ThemedText type="small" themeColor="textSecondary">
-            ชำระผ่าน: {order.paymentMethod.toUpperCase()} ({order.paymentStatus})
+        <View>
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+            ชำระด้วย: {order.paymentMethod.toUpperCase()} ({order.paymentStatus})
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-            ส่งไปที่: {order.shippingAddress.city} {order.shippingAddress.postalCode}
-          </ThemedText>
+          {order.trackingNumber ? (
+            <ThemedText type="small" style={{ color: '#007AFF', fontSize: 11 }}>
+              📦 Tracking: {order.trackingNumber}
+            </ThemedText>
+          ) : null}
         </View>
+
         <View style={{ alignItems: 'flex-end' }}>
-          <ThemedText type="small" themeColor="textSecondary">
-            ยอดรวมสุทธิ
+          <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 11 }}>
+            ยอดรวมทั้งหมด
           </ThemedText>
-          <ThemedText type="smallBold" style={{ color: '#6cc349', fontSize: 18 }}>
+          <ThemedText type="subtitle" style={{ color: '#6cc349', fontSize: 18 }}>
             ${order.totalAmount.toFixed(2)}
           </ThemedText>
         </View>
       </View>
 
-      {/* ส่วนควบคุมสถานะสำหรับผู้ดูแลระบบ (Admin Controls) */}
-      {isAdmin && onUpdateStatus && (
-        <View style={[styles.adminActions, { backgroundColor: theme.background }]}>
-          <ThemedText type="smallBold" style={{ color: '#FF9500', fontSize: 12 }}>
-            ⚡ อัปเดตสถานะ (Admin):
+      {/* ส่วนควบคุมสถานะออเดอร์สำหรับ Admin */}
+      {isAdmin && (
+        <View style={styles.adminActions}>
+          <ThemedText type="smallBold" style={{ fontSize: 11, color: '#d0c5c0', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+            เปลี่ยนสถานะพัสดุ (Admin Control):
           </ThemedText>
           <View style={styles.statusButtonsRow}>
             {(['pending', 'processing', 'shipped', 'delivered'] as OrderStatus[]).map((st) => (
@@ -119,7 +115,7 @@ export function OrderCard({ order, isAdmin, onUpdateStatus }: OrderCardProps) {
                 onPress={() => onUpdateStatus(order.id, st)}
                 style={[
                   styles.statusBtn,
-                  order.status === st && { backgroundColor: '#6cc349', borderColor: '#6cc349' },
+                  order.status === st && { backgroundColor: '#3c8527', borderColor: '#6cc349' },
                 ]}
               >
                 <ThemedText
@@ -127,7 +123,7 @@ export function OrderCard({ order, isAdmin, onUpdateStatus }: OrderCardProps) {
                   style={{
                     fontSize: 11,
                     color: order.status === st ? '#ffffff' : theme.text,
-                    fontWeight: order.status === st ? '700' : '400',
+                    fontWeight: order.status === st ? '800' : '400',
                   }}
                 >
                   {st}
@@ -145,9 +141,9 @@ const styles = StyleSheet.create({
   card: {
     padding: Spacing.four,
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.three,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
   },
   cardHeader: {
     flexDirection: 'row',
@@ -157,7 +153,10 @@ const styles = StyleSheet.create({
   infoBar: {
     paddingHorizontal: Spacing.two,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#262423',
+    borderWidth: 1,
+    borderColor: '#3d3938',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -175,7 +174,7 @@ const styles = StyleSheet.create({
   thumbnailBox: {
     width: 40,
     height: 40,
-    borderRadius: 4,
+    borderRadius: 0, // 0px voxel doctrine
     overflow: 'hidden',
   },
   thumbnail: {
@@ -191,7 +190,10 @@ const styles = StyleSheet.create({
   },
   adminActions: {
     padding: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#262423',
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: 6,
   },
   statusButtonsRow: {
@@ -202,8 +204,9 @@ const styles = StyleSheet.create({
   statusBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.3)',
+    borderColor: '#3d3938',
+    backgroundColor: '#1d1e1e',
   },
 });

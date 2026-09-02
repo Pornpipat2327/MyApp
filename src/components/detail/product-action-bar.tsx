@@ -1,6 +1,7 @@
 /**
  * @file product-action-bar.tsx
- * @description แถบควบคุมการสั่งซื้อ (ปรับจำนวน, กดเพิ่มลงตะกร้า) และปุ่มจัดการสำหรับ Admin (แก้ไข/ลบสินค้า)
+ * @description แถบดำเนินการสั่งซื้อสินค้า (Add to Cart / Buy Now / Admin Actions) สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Primary Fill (#3c8527), Buy Now (#6cc349), และ Admin Controls (#007AFF / #ff605e)
  */
 
 import React from 'react';
@@ -15,10 +16,11 @@ interface ProductActionBarProps {
   maxStock: number;
   onQuantityChange: (qty: number) => void;
   onAddToCart: () => void;
-  addedSuccess: boolean;
-  isAdmin: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
+  onBuyNow?: () => void;
+  addedSuccess?: boolean;
+  isAdmin?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function ProductActionBar({
@@ -26,8 +28,9 @@ export function ProductActionBar({
   maxStock,
   onQuantityChange,
   onAddToCart,
-  addedSuccess,
-  isAdmin,
+  onBuyNow,
+  addedSuccess = false,
+  isAdmin = false,
   onEdit,
   onDelete,
 }: ProductActionBarProps) {
@@ -36,89 +39,122 @@ export function ProductActionBar({
 
   return (
     <View style={styles.container}>
-      {/* ส่วนเลือกจำนวนและปุ่ม Add to Cart */}
-      <View style={styles.purchaseRow}>
-        {/* ตัวเลือกจำนวน */}
-        <View style={[styles.stepperBox, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+      {/* ส่วนเลือกจำนวนสินค้า */}
+      <View style={styles.quantityRow}>
+        <ThemedText type="smallBold">Quantity:</ThemedText>
+        <View style={[styles.quantityStepper, { backgroundColor: theme.background }]}>
           <Pressable
             onPress={() => onQuantityChange(Math.max(1, quantity - 1))}
             disabled={quantity <= 1 || isOutOfStock}
-            style={({ pressed }) => [styles.stepperBtn, (pressed || quantity <= 1) && { opacity: 0.5 }]}
+            style={({ pressed }) => [
+              styles.stepBtn,
+              (pressed || quantity <= 1) && styles.stepBtnDisabled,
+            ]}
           >
-            <ThemedText style={styles.stepperSymbol}>-</ThemedText>
+            <ThemedText style={styles.stepBtnText}>-</ThemedText>
           </Pressable>
 
-          <ThemedText type="smallBold" style={styles.quantityText}>
-            {quantity}
-          </ThemedText>
+          <ThemedText style={styles.quantityValue}>{quantity}</ThemedText>
 
           <Pressable
             onPress={() => onQuantityChange(Math.min(maxStock, quantity + 1))}
             disabled={quantity >= maxStock || isOutOfStock}
             style={({ pressed }) => [
-              styles.stepperBtn,
-              (pressed || quantity >= maxStock) && { opacity: 0.5 },
+              styles.stepBtn,
+              (pressed || quantity >= maxStock) && styles.stepBtnDisabled,
             ]}
           >
-            <ThemedText style={styles.stepperSymbol}>+</ThemedText>
+            <ThemedText style={styles.stepBtnText}>+</ThemedText>
           </Pressable>
         </View>
+      </View>
 
-        {/* ปุ่ม Add to Cart */}
+      {/* ปุ่มสั่งซื้อและเพิ่มลงตะกร้า */}
+      <View style={styles.purchaseButtonsRow}>
         <Pressable
           onPress={onAddToCart}
           disabled={isOutOfStock}
           style={({ pressed }) => [
             styles.addToCartBtn,
-            { backgroundColor: addedSuccess ? '#34C759' : '#6cc349' },
-            (pressed || isOutOfStock) && { opacity: 0.7 },
+            isOutOfStock && styles.btnDisabled,
+            pressed && styles.pressed,
           ]}
         >
           <SymbolView
             tintColor="#ffffff"
             name={{ ios: 'cart.badge.plus', android: 'add_shopping_cart', web: 'add_shopping_cart' } as any}
-            size={20}
+            size={18}
           />
-          <ThemedText type="smallBold" style={styles.btnText}>
-            {isOutOfStock
-              ? 'สินค้าหมด'
-              : addedSuccess
-              ? 'เพิ่มลงตะกร้าแล้ว! ✓'
-              : 'เพิ่มลงตะกร้า (Add to Cart)'}
+          <ThemedText type="smallBold" style={styles.addToCartText}>
+            {addedSuccess ? '✓ เพิ่มแล้ว!' : isOutOfStock ? 'สินค้าหมด' : 'Add to Cart'}
           </ThemedText>
         </Pressable>
+
+        {onBuyNow && (
+          <Pressable
+            onPress={onBuyNow}
+            disabled={isOutOfStock}
+            style={({ pressed }) => [
+              styles.buyNowBtn,
+              isOutOfStock && styles.btnDisabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <ThemedText type="smallBold" style={styles.buyNowText}>
+              Buy Now
+            </ThemedText>
+          </Pressable>
+        )}
       </View>
 
-      {/* ปุ่มจัดการสำหรับ Admin (แก้ไข/ลบ) */}
+      {/* ปุ่มจัดการสินค้าสำหรับ Admin */}
       {isAdmin && (
-        <View style={styles.adminRow}>
-          <Pressable
-            onPress={onEdit}
-            style={({ pressed }) => [styles.editBtn, pressed && styles.pressed]}
-          >
-            <SymbolView
-              tintColor="#007AFF"
-              name={{ ios: 'pencil', android: 'edit', web: 'edit' } as any}
-              size={16}
-            />
-            <ThemedText type="smallBold" style={{ color: '#007AFF' }}>
-              แก้ไขสินค้า
-            </ThemedText>
-          </Pressable>
+        <View style={styles.adminSection}>
+          <View style={[styles.divider, { backgroundColor: '#3d3938' }]} />
+          <ThemedText type="smallBold" style={styles.adminLabel}>
+            Admin Controls
+          </ThemedText>
+          <View style={styles.adminButtonsRow}>
+            {onEdit && (
+              <Pressable
+                onPress={onEdit}
+                style={({ pressed }) => [
+                  styles.adminBtn,
+                  { backgroundColor: '#007AFF' },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <SymbolView
+                  tintColor="#ffffff"
+                  name={{ ios: 'square.and.pencil', android: 'edit', web: 'edit' } as any}
+                  size={16}
+                />
+                <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+                  แก้ไขสินค้า
+                </ThemedText>
+              </Pressable>
+            )}
 
-          <Pressable
-            onPress={onDelete}
-            style={({ pressed }) => [styles.deleteBtn, pressed && styles.pressed]}
-          >
-            <SymbolView
-              tintColor="#FF3B30"
-              name={{ ios: 'trash', android: 'delete', web: 'delete' } as any}
-              size={16}
-            />
-            <ThemedText type="smallBold" style={{ color: '#FF3B30' }}>
-              ลบสินค้า
-            </ThemedText>
-          </Pressable>
+            {onDelete && (
+              <Pressable
+                onPress={onDelete}
+                style={({ pressed }) => [
+                  styles.adminBtn,
+                  { backgroundColor: '#ff605e' },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <SymbolView
+                  tintColor="#ffffff"
+                  name={{ ios: 'trash', android: 'delete', web: 'delete' } as any}
+                  size={16}
+                />
+                <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+                  ลบสินค้า
+                </ThemedText>
+              </Pressable>
+            )}
+          </View>
         </View>
       )}
     </View>
@@ -128,73 +164,118 @@ export function ProductActionBar({
 const styles = StyleSheet.create({
   container: {
     gap: Spacing.three,
-    marginTop: Spacing.two,
   },
-  purchaseRow: {
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  quantityStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
+    overflow: 'hidden',
+  },
+  stepBtn: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 36,
+  },
+  stepBtnDisabled: {
+    opacity: 0.3,
+  },
+  stepBtnText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  quantityValue: {
+    paddingHorizontal: Spacing.three,
+    fontSize: 15,
+    fontWeight: '700',
+    minWidth: 32,
+    textAlign: 'center',
+  },
+  purchaseButtonsRow: {
     flexDirection: 'row',
     gap: Spacing.two,
-    alignItems: 'center',
-  },
-  stepperBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 6,
-    height: 48,
-  },
-  stepperBtn: {
-    paddingHorizontal: 16,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepperSymbol: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  quantityText: {
-    paddingHorizontal: 12,
-    fontSize: 16,
   },
   addToCartBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: Spacing.two,
+    paddingVertical: 15,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#3c8527', // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
   },
-  btnText: {
+  addToCartText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.54,
+  },
+  buyNowBtn: {
+    flex: 1,
+    backgroundColor: '#6cc349', // vanilla-green-3
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: 15,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#3c8527',
+  },
+  buyNowText: {
     color: '#ffffff',
     fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.54,
   },
-  adminRow: {
+  btnDisabled: {
+    opacity: 0.5,
+  },
+  adminSection: {
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+  },
+  adminLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
+  },
+  adminButtonsRow: {
     flexDirection: 'row',
     gap: Spacing.two,
-    marginTop: 4,
   },
-  editBtn: {
+  adminBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: Spacing.two,
-    borderRadius: 6,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-  },
-  deleteBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: Spacing.two,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    gap: Spacing.one,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.75,
   },
 });

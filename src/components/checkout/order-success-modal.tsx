@@ -1,6 +1,7 @@
 /**
  * @file order-success-modal.tsx
- * @description คอมโพเนนต์แสดงผลเมื่อทำการสั่งซื้อสินค้าสำเร็จ พร้อมรหัสคำสั่งซื้อและหมายเลขพัสดุ
+ * @description หน้าต่างแจ้งเตือนเมื่อสั่งซื้อสินค้าสำเร็จ สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), และ Success Primary Button (#3c8527)
  */
 
 import React from 'react';
@@ -10,7 +11,6 @@ import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { Order } from '@/types/order';
 
 interface OrderSuccessModalProps {
@@ -18,32 +18,30 @@ interface OrderSuccessModalProps {
 }
 
 export function OrderSuccessModal({ order }: OrderSuccessModalProps) {
-  const theme = useTheme();
   const router = useRouter();
 
   return (
     <ThemedView type="backgroundElement" style={styles.successCard}>
-      {/* วงกลมไอคอนสำเร็จ */}
       <View style={styles.successIconCircle}>
         <SymbolView
-          tintColor="#34C759"
+          tintColor="#6cc349"
           name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } as any}
           size={64}
         />
       </View>
 
       <ThemedText type="subtitle" style={styles.successTitle}>
-        สั่งซื้อสินค้าสำเร็จเรียบร้อย! 🎉
+        Order Placed Successfully! 🎉
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.successSubtitle}>
-        ขอบคุณสำหรับการสั่งซื้อ ระบบได้รับคำสั่งซื้อคีย์บอร์ดของคุณแล้วและกำลังเตรียมการจัดส่ง
+        ขอบคุณสำหรับการสั่งซื้อ ออเดอร์คีย์บอร์ดของคุณได้รับการบันทึกและพร้อมจัดส่งแล้ว
       </ThemedText>
 
-      {/* กล่องสรุปรายละเอียดคำสั่งซื้อ */}
-      <View style={[styles.orderInfoBox, { backgroundColor: theme.background }]}>
+      {/* กล่องรายละเอียดออเดอร์ */}
+      <View style={[styles.orderInfoBox, { backgroundColor: '#262423' }]}>
         <View style={styles.infoRow}>
           <ThemedText type="small" themeColor="textSecondary">
-            รหัสคำสั่งซื้อ (Order ID)
+            Order ID:
           </ThemedText>
           <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
             #{order.id}
@@ -52,14 +50,21 @@ export function OrderSuccessModal({ order }: OrderSuccessModalProps) {
 
         <View style={styles.infoRow}>
           <ThemedText type="small" themeColor="textSecondary">
-            หมายเลขพัสดุ (Tracking No.)
+            เลขพัสดุ (Tracking):
           </ThemedText>
           <ThemedText type="smallBold">{order.trackingNumber}</ThemedText>
         </View>
 
         <View style={styles.infoRow}>
           <ThemedText type="small" themeColor="textSecondary">
-            ช่องทางชำระเงิน
+            ผู้รับ:
+          </ThemedText>
+          <ThemedText type="smallBold">{order.shippingAddress.recipientName}</ThemedText>
+        </View>
+
+        <View style={styles.infoRow}>
+          <ThemedText type="small" themeColor="textSecondary">
+            ช่องทางชำระเงิน:
           </ThemedText>
           <ThemedText type="smallBold" style={{ textTransform: 'uppercase' }}>
             {order.paymentMethod}
@@ -68,25 +73,15 @@ export function OrderSuccessModal({ order }: OrderSuccessModalProps) {
 
         <View style={styles.infoRow}>
           <ThemedText type="small" themeColor="textSecondary">
-            ยอดเงินที่ชำระ
+            ยอดชำระสุทธิ:
           </ThemedText>
-          <ThemedText type="smallBold" style={{ color: '#34C759', fontSize: 16 }}>
+          <ThemedText type="smallBold" style={{ color: '#6cc349', fontSize: 16 }}>
             ${order.totalAmount.toFixed(2)}
-          </ThemedText>
-        </View>
-
-        <View style={styles.infoRow}>
-          <ThemedText type="small" themeColor="textSecondary">
-            จัดส่งถึง
-          </ThemedText>
-          <ThemedText type="small" style={{ textAlign: 'right', maxWidth: '60%' }}>
-            {order.shippingAddress.recipientName}, {order.shippingAddress.address},{' '}
-            {order.shippingAddress.city} {order.shippingAddress.postalCode}
           </ThemedText>
         </View>
       </View>
 
-      {/* ปุ่มนำทาง */}
+      {/* ปุ่มกดดูออเดอร์ หรือ กลับหน้าร้าน */}
       <View style={styles.successActions}>
         <Pressable
           onPress={() => router.push('/orders' as any)}
@@ -113,14 +108,14 @@ export function OrderSuccessModal({ order }: OrderSuccessModalProps) {
 const styles = StyleSheet.create({
   successCard: {
     padding: Spacing.five,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     gap: Spacing.three,
     maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
   },
   successIconCircle: {
     marginBottom: Spacing.one,
@@ -128,6 +123,7 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 22,
     textAlign: 'center',
+    fontWeight: '800',
   },
   successSubtitle: {
     textAlign: 'center',
@@ -136,7 +132,9 @@ const styles = StyleSheet.create({
   orderInfoBox: {
     width: '100%',
     padding: Spacing.three,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     gap: Spacing.two,
     marginVertical: Spacing.two,
   },
@@ -150,9 +148,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   viewOrdersBtn: {
-    backgroundColor: '#6cc349',
+    backgroundColor: '#3c8527', // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
     paddingVertical: Spacing.three,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
   },
   backHomeBtn: {

@@ -1,6 +1,7 @@
 /**
  * @file cart-item-row.tsx
- * @description คอมโพเนนต์แสดงแถวสินค้าในตะกร้า พร้อมปุ่มเพิ่ม/ลดจำนวน และปุ่มลบสินค้า
+ * @description คอมโพเนนต์แสดงแถวสินค้าในตะกร้า สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Category Accent (#6cc349), และ Stepper คมชัด 0px
  */
 
 import React from 'react';
@@ -44,36 +45,41 @@ export function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowPro
       {/* รายละเอียดสินค้า */}
       <View style={styles.detailsCol}>
         <View style={styles.titleRow}>
-          <ThemedText type="smallBold" numberOfLines={1} style={styles.productName}>
-            {item.name}
-          </ThemedText>
+          <View style={{ flex: 1, paddingRight: 8 }}>
+            <ThemedText type="small" style={styles.itemCategory}>
+              {item.category || 'General'}
+            </ThemedText>
+            <ThemedText type="smallBold" numberOfLines={1} style={styles.productName}>
+              {item.name}
+            </ThemedText>
+          </View>
           <Pressable
             onPress={() => onRemove(item.id)}
             hitSlop={8}
             style={({ pressed }) => pressed && styles.pressed}
           >
             <SymbolView
-              tintColor="#FF3B30"
+              tintColor="#ff605e"
               name={{ ios: 'trash', android: 'delete', web: 'delete' } as any}
               size={18}
             />
           </Pressable>
         </View>
 
-        <ThemedText type="small" themeColor="textSecondary">
-          หมวดหมู่: {item.category || 'General'}
-        </ThemedText>
-
         <View style={styles.bottomRow}>
           <ThemedText type="smallBold" style={styles.priceText}>
             ${Number(item.price).toFixed(2)}
           </ThemedText>
 
-          {/* แถบปรับจำนวน */}
-          <View style={[styles.stepperContainer, { borderColor: theme.border }]}>
+          {/* Stepper ปุ่มเพิ่ม/ลดจำนวน */}
+          <View style={styles.stepperContainer}>
             <Pressable
               onPress={() => onUpdateQuantity(item.id, item.quantity - 1)}
-              style={({ pressed }) => [styles.stepperBtn, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.stepperBtn,
+                { backgroundColor: theme.backgroundSelected },
+                pressed && styles.pressed,
+              ]}
             >
               <ThemedText style={styles.stepperSymbol}>-</ThemedText>
             </Pressable>
@@ -83,12 +89,12 @@ export function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowPro
             </ThemedText>
 
             <Pressable
-              onPress={() => onUpdateQuantity(item.id, Math.min(maxStock, item.quantity + 1))}
+              onPress={() => onUpdateQuantity(item.id, item.quantity + 1)}
               disabled={item.quantity >= maxStock}
               style={({ pressed }) => [
                 styles.stepperBtn,
-                item.quantity >= maxStock && { opacity: 0.3 },
-                pressed && styles.pressed,
+                { backgroundColor: theme.backgroundSelected },
+                (pressed || item.quantity >= maxStock) && styles.pressed,
               ]}
             >
               <ThemedText style={styles.stepperSymbol}>+</ThemedText>
@@ -104,16 +110,16 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     padding: Spacing.three,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.three,
     alignItems: 'center',
   },
   imageWrapper: {
-    width: 72,
-    height: 72,
-    borderRadius: 6,
+    width: 84,
+    height: 84,
+    borderRadius: 0, // 0px voxel doctrine
     overflow: 'hidden',
   },
   itemImage: {
@@ -130,36 +136,45 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  itemCategory: {
+    fontSize: 11,
+    color: '#6cc349',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   productName: {
     fontSize: 15,
-    flex: 1,
-    paddingRight: 8,
+    marginTop: 2,
   },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: Spacing.two,
   },
   priceText: {
     color: '#6cc349',
     fontSize: 16,
+    fontWeight: '800',
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 4,
+    borderColor: '#3d3938',
+    borderRadius: 0, // 0px voxel doctrine
     overflow: 'hidden',
   },
   stepperBtn: {
-    paddingHorizontal: 10,
+    paddingHorizontal: Spacing.two,
     paddingVertical: 4,
+    minWidth: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -168,10 +183,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   quantityText: {
-    paddingHorizontal: 8,
-    fontSize: 13,
+    paddingHorizontal: Spacing.two,
+    fontSize: 14,
+    fontWeight: '700',
+    minWidth: 24,
+    textAlign: 'center',
   },
   pressed: {
-    opacity: 0.6,
+    opacity: 0.7,
   },
 });

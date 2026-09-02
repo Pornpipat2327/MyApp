@@ -1,6 +1,7 @@
 /**
  * @file order-summary-card.tsx
- * @description การ์ดสรุปรายการสินค้า ค่าจัดส่ง ส่วนลด ยอดรวมสุทธิ และปุ่มยืนยันการสั่งซื้อ
+ * @description การ์ดสรุปรายการสินค้าและยอดเงินในหน้า Checkout สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Primary Button (#3c8527), และ Eyebrow Titles (#d0c5c0)
  */
 
 import React from 'react';
@@ -38,10 +39,10 @@ export function OrderSummaryCard({
   return (
     <ThemedView type="backgroundElement" style={styles.summaryCard}>
       <ThemedText type="smallBold" style={styles.summaryTitle}>
-        สรุปคำสั่งซื้อ ({items.length} รายการ)
+        สรุปคำสั่งซื้อ (Order Review)
       </ThemedText>
 
-      {/* รายการสินค้าที่สั่งซื้อ */}
+      {/* รายการสินค้าในตะกร้า */}
       <View style={styles.itemsList}>
         {items.map((item) => {
           const imgSrc = getImageSource(item.image);
@@ -59,7 +60,7 @@ export function OrderSummaryCard({
                   {item.name}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  จำนวน: {item.quantity} ชิ้น
+                  {item.quantity} × ${Number(item.price).toFixed(2)}
                 </ThemedText>
               </View>
               <ThemedText type="smallBold">
@@ -70,21 +71,21 @@ export function OrderSummaryCard({
         })}
       </View>
 
-      {/* ข้อมูลคูปองส่วนลดที่ใช้งาน */}
+      {/* คูปองส่วนลดที่ใช้งาน */}
       {appliedCoupon && (
         <View style={styles.appliedCouponBadge}>
-          <ThemedText type="small" style={{ color: '#34C759', fontWeight: '600' }}>
-            🎉 ใช้งานคูปอง: {appliedCoupon.code} (-${discount.toFixed(2)})
+          <ThemedText type="smallBold" style={{ color: '#6cc349', fontSize: 12 }}>
+            🏷️ คูปอง: {appliedCoupon.code}
           </ThemedText>
         </View>
       )}
 
-      {/* แจกแจงยอดเงิน */}
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      <View style={[styles.divider, { backgroundColor: '#3d3938' }]} />
 
+      {/* คำนวณราคา */}
       <View style={styles.priceRow}>
         <ThemedText type="small" themeColor="textSecondary">
-          ยอดรวมสินค้า (Subtotal)
+          ยอดรวมสินค้า
         </ThemedText>
         <ThemedText type="smallBold">${subtotal.toFixed(2)}</ThemedText>
       </View>
@@ -94,22 +95,22 @@ export function OrderSummaryCard({
           ค่าจัดส่ง (Shipping)
         </ThemedText>
         <ThemedText type="smallBold">
-          {shippingFee === 0 ? 'ส่งฟรี (Free)' : `$${shippingFee.toFixed(2)}`}
+          {shippingFee === 0 ? 'ฟรี (Free)' : `$${shippingFee.toFixed(2)}`}
         </ThemedText>
       </View>
 
       {discount > 0 && (
         <View style={styles.priceRow}>
-          <ThemedText type="small" style={{ color: '#34C759' }}>
+          <ThemedText type="small" style={{ color: '#6cc349' }}>
             ส่วนลด (Discount)
           </ThemedText>
-          <ThemedText type="smallBold" style={{ color: '#34C759' }}>
+          <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
             -${discount.toFixed(2)}
           </ThemedText>
         </View>
       )}
 
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      <View style={[styles.divider, { backgroundColor: '#3d3938' }]} />
 
       {/* ยอดเงินรวมสุทธิ */}
       <View style={styles.priceRow}>
@@ -127,7 +128,6 @@ export function OrderSummaryCard({
         disabled={loading || items.length === 0}
         style={({ pressed }) => [
           styles.submitButton,
-          { backgroundColor: '#6cc349' },
           (pressed || loading || items.length === 0) && { opacity: 0.7 },
         ]}
       >
@@ -147,13 +147,18 @@ const styles = StyleSheet.create({
   summaryCard: {
     padding: Spacing.four,
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
   },
   summaryTitle: {
-    fontSize: 16,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: '#d0c5c0',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.1)',
+    borderBottomColor: '#3d3938',
     paddingBottom: Spacing.two,
   },
   itemsList: {
@@ -168,7 +173,7 @@ const styles = StyleSheet.create({
   itemThumbnailBox: {
     width: 44,
     height: 44,
-    borderRadius: 4,
+    borderRadius: 0, // 0px voxel doctrine
     overflow: 'hidden',
   },
   itemThumbnail: {
@@ -176,14 +181,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   appliedCouponBadge: {
-    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+    backgroundColor: 'rgba(108, 195, 73, 0.15)',
     padding: Spacing.two,
-    borderRadius: 4,
-    alignItems: 'center',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#6cc349',
   },
   divider: {
     height: 1,
-    marginVertical: 2,
+    width: '100%',
+    marginVertical: Spacing.one,
   },
   priceRow: {
     flexDirection: 'row',
@@ -191,14 +198,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButton: {
-    paddingVertical: Spacing.three,
+    paddingVertical: 15,
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 6,
     marginTop: Spacing.two,
+    backgroundColor: '#3c8527', // vanilla-green-5
+    borderWidth: 2,
+    borderColor: '#262423',
   },
   submitButtonText: {
     color: '#ffffff',
     fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.54,
   },
 });

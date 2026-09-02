@@ -1,8 +1,7 @@
 /**
  * @file orders.tsx
- * @description หน้าจอแสดงรายการคำสั่งซื้อทั้งหมด (Orders History Screen)
- * รองรับการค้นหา, การกรองตามสถานะ (รอชำระ, เตรียมจัดส่ง, จัดส่งแล้ว, สำเร็จ)
- * และระบบเปลี่ยนสถานะพัสดุสำหรับผู้ดูแลระบบ (Admin Controls)
+ * @description หน้าจอแสดงรายการคำสั่งซื้อทั้งหมด สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Admin Stats Banner with Green Stripe, Dark Border (#3d3938), และ Surface Mid Filter Section
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -76,7 +75,6 @@ export default function OrdersScreen() {
       try {
         const stored = getStorageJSON<Order[]>('extreme_keys_orders', []);
         if (stored && stored.length > 0) return stored;
-        // หากยังไม่มีเลย ให้บันทึก Seed เริ่มต้น
         setStorageJSON('extreme_keys_orders', SEED_ORDERS);
         return SEED_ORDERS;
       } catch (e) {
@@ -89,7 +87,6 @@ export default function OrdersScreen() {
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ฟังก์ชันซิงค์ข้อมูลเมื่อมี Event orders-change หรือ storage
   const syncOrders = useCallback(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       try {
@@ -110,9 +107,6 @@ export default function OrdersScreen() {
     }
   }, [syncOrders]);
 
-  /**
-   * อัปเดตสถานะคำสั่งซื้อ (เฉพาะ Admin)
-   */
   const handleUpdateStatus = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
       setOrders((prev) => {
@@ -129,7 +123,6 @@ export default function OrdersScreen() {
     []
   );
 
-  // คำนวณจำนวนออเดอร์ในแต่ละสถานะ
   const filterCounts = useMemo(() => {
     const counts: Record<string, number> = {
       all: orders.length,
@@ -146,23 +139,27 @@ export default function OrdersScreen() {
     return counts;
   }, [orders]);
 
-  // กรองคำสั่งซื้อตามตัวกรองและข้อความค้นหา
+  const totalRevenue = useMemo(() => {
+    return orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  }, [orders]);
+
+  const pendingCount = useMemo(() => {
+    return orders.filter((o) => o.status === 'pending').length;
+  }, [orders]);
+
   const filteredOrders = useMemo(() => {
     let list = [...orders];
 
-    // ถ้าไม่ใช่ Admin ให้แสดงเฉพาะคำสั่งซื้อของตัวเอง
     if (!isAdmin && currentUser?.username) {
       list = list.filter(
         (o) => o.username === currentUser.username || !o.username || o.username === 'Guest'
       );
     }
 
-    // กรองตามแท็บสถานะ
     if (selectedFilter !== 'all') {
       list = list.filter((o) => o.status === selectedFilter);
     }
 
-    // กรองตามคำค้นหา
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
@@ -193,10 +190,10 @@ export default function OrdersScreen() {
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
               size={20}
             />
-            <ThemedText type="smallBold">หน้าแรก</ThemedText>
+            <ThemedText type="smallBold">Back</ThemedText>
           </Pressable>
           <ThemedText type="smallBold" style={styles.headerTitle}>
-            รายการคำสั่งซื้อ (Order History)
+            {isAdmin ? '👑 Customer Orders Management' : 'My Orders History'}
           </ThemedText>
           <View style={{ width: 60 }} />
         </View>
@@ -206,42 +203,80 @@ export default function OrdersScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* ตัวกรองและช่องค้นหา */}
-          <OrderFilters
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedFilter={selectedFilter}
-            onSelectFilter={setSelectedFilter}
-            counts={filterCounts}
-          />
+          <View style={styles.contentWrapper}>
+            {/* Admin Stats Banner - Minecraft Voxel Banner with Green Left Stripe */}
+            {isAdmin && (
+              <ThemedView type="backgroundElement" style={styles.adminStatsBanner}>
+                <View style={styles.adminStatItem}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Total Orders
+                  </ThemedText>
+                  <ThemedText type="subtitle" style={{ color: '#007AFF', marginTop: 2 }}>
+                    {orders.length}
+                  </ThemedText>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.adminStatItem}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Total Sales Revenue
+                  </ThemedText>
+                  <ThemedText type="subtitle" style={{ color: '#6cc349', marginTop: 2 }}>
+                    ${totalRevenue.toFixed(2)}
+                  </ThemedText>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.adminStatItem}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Pending Orders
+                  </ThemedText>
+                  <ThemedText type="subtitle" style={{ color: '#ffc42b', marginTop: 2 }}>
+                    {pendingCount}
+                  </ThemedText>
+                </View>
+              </ThemedView>
+            )}
 
-          {/* รายการคำสั่งซื้อ */}
-          {filteredOrders.length === 0 ? (
-            <ThemedView type="backgroundElement" style={styles.emptyCard}>
-              <SymbolView
-                tintColor="#888888"
-                name={{ ios: 'doc.text.magnifyingglass', android: 'search_off', web: 'search_off' } as any}
-                size={48}
-              />
-              <ThemedText type="smallBold" style={{ marginTop: 8 }}>
-                ไม่พบรายการคำสั่งซื้อ
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                ยังไม่มีคำสั่งซื้อที่ตรงกับเงื่อนไขการค้นหาของคุณ
-              </ThemedText>
-            </ThemedView>
-          ) : (
-            <View style={styles.ordersList}>
-              {filteredOrders.map((order) => (
-                <OrderCard
-                  key={order.id}
-                  order={order}
-                  isAdmin={isAdmin}
-                  onUpdateStatus={handleUpdateStatus}
+            {/* Filter Section */}
+            <OrderFilters
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              selectedFilter={selectedFilter}
+              onSelectFilter={setSelectedFilter}
+              counts={filterCounts}
+            />
+
+            {/* รายการคำสั่งซื้อ */}
+            {filteredOrders.length === 0 ? (
+              <ThemedView type="backgroundElement" style={styles.emptyCard}>
+                <SymbolView
+                  tintColor="#888888"
+                  name={{
+                    ios: 'doc.text.magnifyingglass',
+                    android: 'search_off',
+                    web: 'search_off',
+                  }}
+                  size={48}
                 />
-              ))}
-            </View>
-          )}
+                <ThemedText type="smallBold" style={{ marginTop: 8 }}>
+                  No Orders Found
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  No orders match your current filter criteria.
+                </ThemedText>
+              </ThemedView>
+            ) : (
+              <View style={styles.ordersList}>
+                {filteredOrders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    isAdmin={isAdmin}
+                    onUpdateStatus={handleUpdateStatus}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -261,8 +296,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.15)',
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
   },
   backButton: {
     flexDirection: 'row',
@@ -276,23 +311,45 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-    padding: Spacing.four,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.four,
     paddingBottom: BottomTabInset + Spacing.six,
-    gap: Spacing.three,
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    gap: Spacing.four,
+  },
+  adminStatsBanner: {
+    flexDirection: 'row',
+    padding: Spacing.four,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 2,
+    borderColor: '#3d3938',
+    borderLeftWidth: 4,
+    borderLeftColor: '#6cc349',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  adminStatItem: {
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#3d3938',
   },
   ordersList: {
     gap: Spacing.three,
   },
   emptyCard: {
     padding: Spacing.six,
-    borderRadius: 8,
+    borderRadius: 0, // 0px voxel doctrine
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: 6,
   },
   pressed: {

@@ -1,7 +1,7 @@
 /**
  * @file detail.tsx
- * @description หน้ารายละเอียดสินค้า (Product Detail Screen)
- * ประกอบด้วยรูปภาพขนาดใหญ่, รายละเอียดสเปก, ตัวปรับจำนวน, ปุ่มเพิ่มลงตะกร้า และปุ่มจัดการสินค้าสำหรับ Admin
+ * @description หน้ารายละเอียดสินค้า สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Hero Image (Height 320), Info Card Border (#3d3938), และ Dungeons Gold Voltage (#ffc42b)
  */
 
 import React, { useState, useCallback } from 'react';
@@ -20,7 +20,7 @@ import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TopHeader } from '@/components/top-header';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCart } from '@/hooks/use-cart';
 import { getProductsApiUrl } from '@/constants/api';
@@ -77,11 +77,11 @@ export default function ProductDetailScreen() {
             id: d.Product_ID ?? d.id ?? params.id!,
             name: d.Name ?? d.name ?? '',
             category: d.Category ?? d.category ?? 'General',
-            price: d.Price ?? d.price ?? 0,
-            rating: d.Rating ?? d.rating ?? 4.5,
+            price: Number(d.Price ?? d.price ?? 0),
+            rating: Number(d.Rating ?? d.rating ?? 4.5),
             description: d.Description ?? d.description ?? '',
             image: d.image ?? d.Image ?? d.image_url ?? '',
-            stock: d.Stock ?? d.stock ?? 0,
+            stock: Number(d.Stock ?? d.stock ?? 0),
             location: d.Location ?? d.location ?? d.location_text ?? '',
           });
         })
@@ -94,9 +94,6 @@ export default function ProductDetailScreen() {
     }, [params.id, router])
   );
 
-  /**
-   * เพิ่มสินค้าลงในตะกร้าพร้อม Feedback แสดงผล
-   */
   const handleAddToCart = () => {
     if (!product) return;
     addToCart(product, quantity);
@@ -106,9 +103,12 @@ export default function ProductDetailScreen() {
     }, 1800);
   };
 
-  /**
-   * นำทางไปยังหน้าแก้ไขสินค้า
-   */
+  const handleBuyNow = () => {
+    if (!product) return;
+    addToCart(product, quantity);
+    router.push('/checkout' as any);
+  };
+
   const handleEdit = () => {
     if (!product) return;
     router.push({
@@ -127,9 +127,6 @@ export default function ProductDetailScreen() {
     });
   };
 
-  /**
-   * ขอยืนยันและส่งคำขอลบสินค้า
-   */
   const handleDelete = async () => {
     if (!product) return;
 
@@ -176,7 +173,7 @@ export default function ProductDetailScreen() {
         <TopHeader />
 
         {/* แถบย้อนกลับและหัวข้อ */}
-        <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
+        <View style={[styles.headerBar, { borderBottomColor: '#3d3938' }]}>
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.push('/product'))}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
@@ -186,10 +183,10 @@ export default function ProductDetailScreen() {
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
               size={20}
             />
-            <ThemedText type="smallBold">รายการสินค้า</ThemedText>
+            <ThemedText type="smallBold">Back</ThemedText>
           </Pressable>
           <ThemedText type="smallBold" numberOfLines={1} style={styles.headerTitle}>
-            รายละเอียดสินค้า
+            Product Detail
           </ThemedText>
           <View style={{ width: 60 }} />
         </View>
@@ -203,30 +200,31 @@ export default function ProductDetailScreen() {
             <View style={styles.centerBox}>
               <ActivityIndicator size="large" color="#6cc349" />
               <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 12 }}>
-                กำลังโหลดรายละเอียดสินค้า...
+                Loading details...
               </ThemedText>
             </View>
           ) : error ? (
             <View style={styles.centerBox}>
-              <ThemedText style={{ color: '#FF3B30', fontSize: 16 }}>⚠️ {error}</ThemedText>
+              <ThemedText style={{ color: '#ff605e', fontSize: 16 }}>⚠️ {error}</ThemedText>
               <Pressable
                 onPress={() => router.push('/product')}
-                style={[styles.backStoreBtn, { backgroundColor: theme.backgroundElement }]}
+                style={styles.backStoreBtn}
               >
-                <ThemedText type="smallBold">กลับไปหน้ารายการสินค้า</ThemedText>
+                <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+                  Go Back
+                </ThemedText>
               </Pressable>
             </View>
           ) : product ? (
-            <View style={styles.mainGrid}>
-              {/* รูปภาพสินค้า */}
-              <View style={styles.imageColumn}>
-                <ProductImageViewer image={product.image} category={product.category} />
-              </View>
+            <View style={styles.detailWrapper}>
+              {/* รูปภาพสินค้าแบบเต็มความกว้าง */}
+              <ProductImageViewer image={product.image} category={product.category} />
 
-              {/* ข้อมูลและการสั่งซื้อ */}
-              <View style={styles.infoColumn}>
+              {/* ข้อมูลและการสั่งซื้อ ใน Info Card สไตล์ Minecraft */}
+              <ThemedView type="backgroundElement" style={styles.infoCard}>
                 <ProductInfoSection
                   name={product.name}
+                  category={product.category}
                   price={product.price}
                   rating={product.rating}
                   stock={product.stock}
@@ -239,12 +237,13 @@ export default function ProductDetailScreen() {
                   maxStock={Number(product.stock) || 0}
                   onQuantityChange={setQuantity}
                   onAddToCart={handleAddToCart}
+                  onBuyNow={handleBuyNow}
                   addedSuccess={addedSuccess}
                   isAdmin={isAdmin}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
-              </View>
+              </ThemedView>
             </View>
           ) : null}
         </ScrollView>
@@ -281,10 +280,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
-    padding: Spacing.four,
+    alignItems: 'center',
     paddingBottom: BottomTabInset + Spacing.six,
   },
   centerBox: {
@@ -296,24 +292,26 @@ const styles = StyleSheet.create({
   backStoreBtn: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0,
+    backgroundColor: '#3c8527',
+    borderWidth: 2,
+    borderColor: '#262423',
     marginTop: Spacing.two,
   },
-  mainGrid: {
-    flexDirection: 'row',
-    gap: Spacing.five,
-    flexWrap: 'wrap',
+  detailWrapper: {
+    width: '100%',
+    maxWidth: 720,
+    ...Platform.select({ web: { width: 'calc(100% - 0px)' as any } }),
   },
-  imageColumn: {
-    flex: 1,
-    minWidth: 320,
-  },
-  infoColumn: {
-    flex: 1.2,
-    minWidth: 320,
-    gap: Spacing.four,
+  infoCard: {
+    margin: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
+    padding: Spacing.four,
+    gap: Spacing.three,
   },
   pressed: {
-    opacity: 0.7,
+    opacity: 0.75,
   },
 });

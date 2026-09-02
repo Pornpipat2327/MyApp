@@ -1,148 +1,147 @@
 /**
  * @file payment-method-selector.tsx
- * @description คอมโพเนนต์เลือกช่องทางการชำระเงิน (PromptPay, โอนผ่านธนาคาร, เก็บเงินปลายทาง)
+ * @description คอมโพเนนต์เลือกช่องทางการชำระเงิน สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Active Border (#6cc349), และ Square Radios (0px)
  */
 
 import React from 'react';
-import { StyleSheet, View, Pressable, Image } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { PaymentMethod } from '@/types/order';
+import { PaymentMethod } from './types';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod;
   onSelectMethod: (method: PaymentMethod) => void;
-  totalAmount: number;
+  grandTotal: number;
 }
 
 export function PaymentMethodSelector({
   selectedMethod,
   onSelectMethod,
-  totalAmount,
+  grandTotal,
 }: PaymentMethodSelectorProps) {
-  const theme = useTheme();
-
   return (
     <ThemedView type="backgroundElement" style={styles.sectionCard}>
-      {/* Header ของ Section */}
+      {/* ส่วนหัวการ์ดช่องทางการชำระเงิน */}
       <View style={styles.cardHeaderRow}>
         <SymbolView
-          tintColor="#34C759"
+          tintColor="#6cc349"
           name={{ ios: 'creditcard.fill', android: 'payment', web: 'payment' } as any}
           size={20}
         />
         <ThemedText type="smallBold" style={styles.cardHeaderTitle}>
-          2. เลือกวิธีชำระเงิน (Payment Method)
+          ช่องทางการชำระเงิน (Payment Method)
         </ThemedText>
       </View>
 
       <View style={styles.methodsList}>
-        {/* ตัวเลือกที่ 1: PromptPay QR Code */}
+        {/* ตัวเลือก 1: PromptPay QR Code */}
         <Pressable
           onPress={() => onSelectMethod('promptpay')}
           style={[
             styles.methodOption,
-            {
-              backgroundColor: theme.background,
-              borderColor: selectedMethod === 'promptpay' ? '#6cc349' : theme.border,
-            },
+            selectedMethod === 'promptpay'
+              ? styles.methodOptionActive
+              : styles.methodOptionInactive,
           ]}
         >
           <View style={styles.optionRadioRow}>
             <View
               style={[
                 styles.radioCircle,
-                selectedMethod === 'promptpay' && { borderColor: '#6cc349', borderWidth: 5 },
+                selectedMethod === 'promptpay' && styles.radioCircleActive,
               ]}
-            />
+            >
+              {selectedMethod === 'promptpay' && <View style={styles.radioInner} />}
+            </View>
             <View style={{ flex: 1 }}>
-              <ThemedText type="smallBold">PromptPay QR พร้อมเพย์ (แนะนำ)</ThemedText>
+              <ThemedText type="smallBold">พร้อมเพย์ QR Code (PromptPay - แนะนำ)</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                สแกนจ่ายผ่าน Mobile Banking ได้ทุกธนาคาร ยอดเงินปรับทันที
+                สแกนจ่ายได้ทันทีผ่านทุก Mobile Banking Application
               </ThemedText>
             </View>
           </View>
 
           {selectedMethod === 'promptpay' && (
-            <View style={[styles.qrContainer, { backgroundColor: '#ffffff' }]}>
-              <ThemedText type="smallBold" style={{ color: '#000000', marginBottom: 4 }}>
-                ExtremeKey Official PromptPay
-              </ThemedText>
-              <Image
-                source={{
-                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PROMPTPAY-EXTREMEKEY-${totalAmount.toFixed(2)}`,
-                }}
-                style={styles.qrImage}
-                resizeMode="contain"
-              />
-              <ThemedText type="small" style={{ color: '#555555', marginTop: 4 }}>
-                ยอดชำระ: ฿{totalAmount.toFixed(2)}
-              </ThemedText>
+            <View style={styles.qrContainer}>
+              <View style={styles.qrDemoBox}>
+                <SymbolView
+                  tintColor="#6cc349"
+                  name={{ ios: 'qrcode', android: 'qr_code_2', web: 'qr_code_2' } as any}
+                  size={120}
+                />
+                <ThemedText type="smallBold" style={{ marginTop: 8, color: '#6cc349' }}>
+                  สแกนจ่าย ${grandTotal.toFixed(2)}
+                </ThemedText>
+              </View>
             </View>
           )}
         </Pressable>
 
-        {/* ตัวเลือกที่ 2: โอนผ่านบัญชีธนาคาร (Bank Transfer) */}
+        {/* ตัวเลือก 2: โอนเงินผ่านธนาคาร */}
         <Pressable
           onPress={() => onSelectMethod('bank_transfer')}
           style={[
             styles.methodOption,
-            {
-              backgroundColor: theme.background,
-              borderColor: selectedMethod === 'bank_transfer' ? '#6cc349' : theme.border,
-            },
+            selectedMethod === 'bank_transfer'
+              ? styles.methodOptionActive
+              : styles.methodOptionInactive,
           ]}
         >
           <View style={styles.optionRadioRow}>
             <View
               style={[
                 styles.radioCircle,
-                selectedMethod === 'bank_transfer' && { borderColor: '#6cc349', borderWidth: 5 },
+                selectedMethod === 'bank_transfer' && styles.radioCircleActive,
               ]}
-            />
+            >
+              {selectedMethod === 'bank_transfer' && <View style={styles.radioInner} />}
+            </View>
             <View style={{ flex: 1 }}>
               <ThemedText type="smallBold">โอนเงินผ่านบัญชีธนาคาร (Bank Transfer)</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                โอนผ่านเลขบัญชีธนาคารกสิกรไทย หรือ ธนาคารกรุงเทพ
+                ธนาคารกสิกรไทย / ไทยพาณิชย์
               </ThemedText>
             </View>
           </View>
 
           {selectedMethod === 'bank_transfer' && (
-            <View style={[styles.bankDetailsBox, { borderColor: theme.border }]}>
-              <ThemedText type="smallBold" style={{ color: '#007AFF' }}>
+            <View style={styles.bankInfoBox}>
+              <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
                 ธนาคารกสิกรไทย (KBANK)
               </ThemedText>
-              <ThemedText type="small">เลขที่บัญชี: 123-4-56789-0</ThemedText>
-              <ThemedText type="small">ชื่อบัญชี: บจก. เอ็กซ์ตรีม คีย์บอร์ด (ไทยแลนด์)</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 4 }}>
-                * กรุณาเก็บหลักฐานสลิปการโอนไว้เพื่อตรวจสอบ
+              <ThemedText type="small" themeColor="textSecondary">
+                เลขบัญชี: 123-4-56789-0
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                ชื่อบัญชี: บจก. เอ็กซ์ตรีม คีย์บอร์ด สโตร์
               </ThemedText>
             </View>
           )}
         </Pressable>
 
-        {/* ตัวเลือกที่ 3: เก็บเงินปลายทาง (Cash on Delivery) */}
+        {/* ตัวเลือก 3: เก็บเงินปลายทาง COD */}
         <Pressable
           onPress={() => onSelectMethod('cod')}
           style={[
             styles.methodOption,
-            {
-              backgroundColor: theme.background,
-              borderColor: selectedMethod === 'cod' ? '#6cc349' : theme.border,
-            },
+            selectedMethod === 'cod'
+              ? styles.methodOptionActive
+              : styles.methodOptionInactive,
           ]}
         >
           <View style={styles.optionRadioRow}>
             <View
               style={[
                 styles.radioCircle,
-                selectedMethod === 'cod' && { borderColor: '#6cc349', borderWidth: 5 },
+                selectedMethod === 'cod' && styles.radioCircleActive,
               ]}
-            />
+            >
+              {selectedMethod === 'cod' && <View style={styles.radioInner} />}
+            </View>
             <View style={{ flex: 1 }}>
               <ThemedText type="smallBold">เก็บเงินปลายทาง (Cash on Delivery: COD)</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
@@ -160,28 +159,36 @@ const styles = StyleSheet.create({
   sectionCard: {
     padding: Spacing.four,
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.15)',
+    borderColor: '#3d3938',
     gap: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.1)',
+    borderBottomColor: '#3d3938',
     paddingBottom: Spacing.two,
   },
   cardHeaderTitle: {
     fontSize: 16,
   },
   methodsList: {
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
   methodOption: {
     padding: Spacing.three,
-    borderWidth: 1.5,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
     gap: Spacing.two,
+  },
+  methodOptionInactive: {
+    borderColor: '#3d3938',
+  },
+  methodOptionActive: {
+    borderColor: '#6cc349',
+    borderWidth: 2,
   },
   optionRadioRow: {
     flexDirection: 'row',
@@ -189,27 +196,44 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 0, // 0px square checkbox
     borderWidth: 2,
-    borderColor: '#888888',
+    borderColor: '#898481',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioCircleActive: {
+    borderColor: '#6cc349',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 0,
+    backgroundColor: '#6cc349',
   },
   qrContainer: {
     alignItems: 'center',
-    padding: Spacing.three,
-    borderRadius: 8,
-    marginTop: Spacing.two,
+    padding: Spacing.two,
   },
-  qrImage: {
-    width: 160,
-    height: 160,
-  },
-  bankDetailsBox: {
+  qrDemoBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: Spacing.two,
     borderWidth: 1,
-    borderRadius: 4,
-    marginTop: Spacing.one,
+    borderColor: '#6cc349',
+    borderRadius: 0,
+    width: '100%',
+    maxWidth: 240,
+    backgroundColor: '#262423',
+  },
+  bankInfoBox: {
+    padding: Spacing.two,
+    backgroundColor: 'rgba(108, 195, 73, 0.08)',
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: '#52a535',
     gap: 2,
   },
 });

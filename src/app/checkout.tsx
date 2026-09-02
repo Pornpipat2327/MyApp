@@ -1,7 +1,7 @@
 /**
  * @file checkout.tsx
- * @description หน้าจอชำระเงินและสั่งซื้อสินค้า (Checkout Screen)
- * รวบรวมฟอร์มข้อมูลที่อยู่จัดส่ง, ช่องทางการชำระเงิน (PromptPay/โอนธนาคาร/COD), สรุปยอดเงิน และบันทึกคำสั่งซื้อ
+ * @description หน้าจอชำระเงินและสั่งซื้อสินค้า สไตล์ Minecraft Voxel Design System
+ * 0px Voxel Doctrine, Dark Border (#3d3938), Primary Buttons (#3c8527), และ Warning Banner (#ff605e)
  */
 
 import React, { useState, useCallback } from 'react';
@@ -19,17 +19,16 @@ import { TopHeader } from '@/components/top-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { useCart } from '@/hooks/use-cart';
 import { Order, PaymentMethod } from '@/types/order';
-import { ShippingForm, ShippingFormValues } from '@/components/checkout/shipping-form';
+import { ShippingForm } from '@/components/checkout/shipping-form';
+import { ShippingAddressValues } from '@/components/checkout/types';
 import { PaymentMethodSelector } from '@/components/checkout/payment-method-selector';
 import { OrderSummaryCard } from '@/components/checkout/order-summary-card';
 import { OrderSuccessModal } from '@/components/checkout/order-success-modal';
 import { getStorageJSON, setStorageJSON } from '@/utils/storage';
 
 export default function CheckoutScreen() {
-  const theme = useTheme();
   const router = useRouter();
   const {
     items,
@@ -41,8 +40,8 @@ export default function CheckoutScreen() {
     clearCart,
   } = useCart();
 
-  // กำหนดค่าเริ่มต้นของผู้รับจาก User ที่เข้าสู่ระบบ (Lazy initialization ป้องกัน cascading renders)
-  const [shippingValues, setShippingValues] = useState<ShippingFormValues>(() => {
+  // กำหนดค่าเริ่มต้นของผู้รับจาก User ที่เข้าสู่ระบบ
+  const [shippingValues, setShippingValues] = useState<ShippingAddressValues>(() => {
     let defaultRecipient = '';
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       try {
@@ -66,8 +65,8 @@ export default function CheckoutScreen() {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const handleShippingChange = useCallback(
-    <K extends keyof ShippingFormValues>(key: K, value: ShippingFormValues[K]) => {
-      setShippingValues((prev) => ({ ...prev, [key]: value }));
+    (key: keyof ShippingAddressValues, value: string) => {
+      setShippingValues((prev: ShippingAddressValues) => ({ ...prev, [key]: value }));
     },
     []
   );
@@ -100,18 +99,22 @@ export default function CheckoutScreen() {
     setLoading(true);
     setErrorMessage(null);
 
+    // สร้างข้อมูล Order จำลอง
     setTimeout(() => {
-      const randomNum = Math.floor(10000 + Math.random() * 90000);
-      const orderId = `EK-${randomNum}`;
-
-      const user = getStorageJSON<{ username?: string; role?: string }>('user', {});
-      const currentUsername = user?.username || 'Guest';
-      const currentRole = user?.role || 'user';
+      let currentUsername = 'Guest';
+      let currentUserRole = 'user';
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        try {
+          const user = getStorageJSON<{ username?: string; role?: string }>('user', {});
+          if (user?.username) currentUsername = user.username;
+          if (user?.role) currentUserRole = user.role;
+        } catch {}
+      }
 
       const newOrder: Order = {
-        id: orderId,
+        id: `EK-${Math.floor(10000 + Math.random() * 90000)}`,
         username: currentUsername,
-        userRole: currentRole,
+        userRole: currentUserRole,
         createdAt: new Date().toISOString(),
         status: 'pending',
         items: [...items],
@@ -126,19 +129,19 @@ export default function CheckoutScreen() {
           address: shippingValues.address.trim(),
           city: shippingValues.city.trim(),
           postalCode: shippingValues.postalCode.trim(),
-          note: shippingValues.note.trim(),
+          note: (shippingValues.note || '').trim(),
         },
         paymentMethod,
         paymentStatus: paymentMethod === 'cod' ? 'pending' : 'paid',
         trackingNumber: `TH${Math.floor(100000000 + Math.random() * 900000000)}TH`,
       };
 
-      // บันทึกลง LocalStorage
+      // บันทึกลงใน LocalStorage
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         try {
           const existingOrders = getStorageJSON<Order[]>('extreme_keys_orders', []);
-          const updatedOrders = [newOrder, ...existingOrders];
-          setStorageJSON('extreme_keys_orders', updatedOrders);
+          const updated = [newOrder, ...(Array.isArray(existingOrders) ? existingOrders : [])];
+          setStorageJSON('extreme_keys_orders', updated);
           window.dispatchEvent(new Event('orders-change'));
         } catch (e) {
           console.error('Failed to save order to localStorage', e);
@@ -148,7 +151,7 @@ export default function CheckoutScreen() {
       clearCart();
       setLoading(false);
       setCompletedOrder(newOrder);
-    }, 800);
+    }, 1000);
   };
 
   return (
@@ -156,23 +159,23 @@ export default function CheckoutScreen() {
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         <TopHeader />
 
-        {/* แถบย้อนกลับและหัวข้อ */}
-        <View style={[styles.headerBar, { borderBottomColor: theme.border }]}>
+        {/* แถบหัวเรื่องและปุ่มย้อนกลับ */}
+        <View style={styles.headerBar}>
           <Pressable
             onPress={() => router.push('/cart' as any)}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
           >
             <SymbolView
-              tintColor={theme.text}
+              tintColor="#6cc349"
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
               size={20}
             />
-            <ThemedText type="smallBold">ตะกร้าสินค้า</ThemedText>
+            <ThemedText type="smallBold">Cart</ThemedText>
           </Pressable>
           <ThemedText type="smallBold" style={styles.headerTitle}>
-            ชำระเงินและจัดส่ง (Checkout)
+            Checkout & Payment
           </ThemedText>
-          <View style={{ width: 80 }} />
+          <View style={{ width: 60 }} />
         </View>
 
         <ScrollView
@@ -181,20 +184,20 @@ export default function CheckoutScreen() {
           showsVerticalScrollIndicator={false}
         >
           {completedOrder ? (
-            /* แสดงหน้าจอสั่งซื้อสำเร็จ */
             <OrderSuccessModal order={completedOrder} />
           ) : (
             <View style={styles.mainWrapper}>
-              {/* คอลัมน์ซ้าย: ฟอร์มที่อยู่ และ วิธีชำระเงิน */}
-              <View style={styles.formsColumn}>
-                {errorMessage && (
-                  <View style={styles.errorBanner}>
-                    <ThemedText style={{ color: '#FF3B30', fontSize: 13 }}>
-                      ⚠️ {errorMessage}
-                    </ThemedText>
-                  </View>
-                )}
+              {/* แบนเนอร์แสดงข้อความเตือน Error */}
+              {errorMessage && (
+                <View style={styles.errorBanner}>
+                  <ThemedText style={{ color: '#ff605e', fontSize: 13, fontWeight: '700' }}>
+                    ⚠️ {errorMessage}
+                  </ThemedText>
+                </View>
+              )}
 
+              {/* คอลัมน์ซ้าย: ฟอร์มที่อยู่ และ ช่องทางชำระเงิน */}
+              <View style={styles.formsColumn}>
                 <ShippingForm
                   values={shippingValues}
                   onChange={handleShippingChange}
@@ -203,7 +206,7 @@ export default function CheckoutScreen() {
                 <PaymentMethodSelector
                   selectedMethod={paymentMethod}
                   onSelectMethod={setPaymentMethod}
-                  totalAmount={grandTotal}
+                  grandTotal={grandTotal}
                 />
               </View>
 
@@ -241,7 +244,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
   },
   backButton: {
     flexDirection: 'row',
@@ -276,11 +280,12 @@ const styles = StyleSheet.create({
     minWidth: 280,
   },
   errorBanner: {
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    width: '100%',
+    backgroundColor: 'rgba(255, 96, 94, 0.15)',
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: '#ff605e',
     padding: Spacing.two,
-    borderRadius: 6,
+    borderRadius: 0, // 0px voxel doctrine
   },
   pressed: {
     opacity: 0.7,

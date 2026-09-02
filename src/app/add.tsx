@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.15)',
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
   },
   backBtn: {
     flexDirection: 'row',

@@ -262,8 +262,8 @@ export function TopHeader({ searchQuery, onSearchChange, onSearchSubmit }: TopHe
 const styles = StyleSheet.create({
   headerWrapper: {
     width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(128, 128, 128, 0.15)',
+    borderBottomWidth: 2,
+    borderBottomColor: '#3d3938',
     zIndex: 999,
   },
   innerContainer: {
@@ -297,7 +297,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 20,
+    borderColor: '#3d3938',
+    borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#262423',
     paddingHorizontal: Spacing.three,
     height: 40,
     gap: Spacing.two,
@@ -305,6 +307,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
+    color: '#ede5e2',
     padding: 0,
   },
   actionsRight: {
@@ -315,7 +318,9 @@ const styles = StyleSheet.create({
   actionIconButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 0, // 0px voxel doctrine
+    borderWidth: 1,
+    borderColor: '#3d3938',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -325,7 +330,7 @@ const styles = StyleSheet.create({
     top: -2,
     right: -2,
     backgroundColor: '#6cc349',
-    borderRadius: 10,
+    borderRadius: 0, // 0px voxel doctrine
     minWidth: 18,
     height: 18,
     justifyContent: 'center',
