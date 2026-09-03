@@ -150,6 +150,7 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           showsVerticalScrollIndicator={false}
         >
           <ProductForm
+            key={product?.id ? `edit-${product.id}` : 'add-new'}
             initialData={product}
             isEditMode={!!product}
             onSubmit={handleSaveProduct}

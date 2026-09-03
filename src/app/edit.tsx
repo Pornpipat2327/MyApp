@@ -4,9 +4,9 @@
  * ดึงข้อมูลสินค้าเดิมจาก Route Params หรือจาก REST API แล้วนำมาแสดงในฟอร์มเพื่อแก้ไข
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { ActivityIndicator, Text, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState, useCallback, useMemo } from 'react';
+import { ActivityIndicator, Text, Alert, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import AddScreen from './add';
 import { ThemedView } from '@/components/themed-view';
 import { getProductsApiUrl } from '@/constants/api';
@@ -31,68 +31,133 @@ export default function EditProductScreen({
     stock?: string;
     category?: string;
     location?: string;
+    location_text?: string;
     image?: string;
+    image_url?: string;
     description?: string;
     rating?: string;
   }>();
 
-  // สร้างข้อมูลเริ่มต้นจาก params หรือ prop ถ้ามีอยู่แล้ว
-  const initialProductData = useMemo<ProductFormData | null>(() => {
-    if (propProduct) return propProduct;
-    if (params.id && params.name) {
+  // สร้างข้อมูลเริ่มต้นจาก params ถ้ามีส่งมาด้วย
+  const parsedParamsProduct = useMemo<ProductFormData | null>(() => {
+    if (params.id) {
       return {
-        id: params.id,
-        name: params.name,
+        id: String(params.id),
+        name: params.name || '',
         price: params.price ? parseFloat(params.price) : 0,
         stock: params.stock ? parseInt(params.stock, 10) : 0,
-        category: params.category || '',
-        location_text: params.location || '',
-        image_url: params.image || '',
+        category: params.category || 'General',
+        location_text: params.location_text || params.location || '',
+        image_url: params.image_url || params.image || '',
         description: params.description || '',
-        rating: params.rating ? parseFloat(params.rating) : undefined,
+        rating: params.rating ? parseFloat(params.rating) : 5,
       };
     }
     return null;
-  }, [propProduct, params]);
+  }, [params]);
 
-  const [productData, setProductData] = useState<ProductFormData | null>(initialProductData);
-  const [fetching, setFetching] = useState<boolean>(!initialProductData && !!params.id);
+  const [productData, setProductData] = useState<ProductFormData | null>(
+    propProduct ?? (parsedParamsProduct?.name ? parsedParamsProduct : null)
+  );
+  const [fetching, setFetching] = useState<boolean>(false);
 
-  // ดึงข้อมูลเพิ่มเติมจาก API หากมีเฉพาะ id ใน route params
-  useEffect(() => {
-    if (initialProductData) {
-      return;
-    }
+  // ดึงข้อมูลสินค้าล่าสุดจาก Backend API ทุกครั้งที่เข้าสู่หน้านี้
+  useFocusEffect(
+    useCallback(() => {
+      if (propProduct) {
+        setProductData(propProduct);
+        setFetching(false);
+        return;
+      }
 
-    if (params.id) {
-      fetch(`${getProductsApiUrl()}/${params.id}`)
+      const targetId = params.id;
+      if (!targetId) {
+        setFetching(false);
+        setProductData(null);
+        return;
+      }
+
+      // หากมี params ข้อมูลเบื้องต้น ให้แสดงทันทีเพื่อป้องกันหน้าจอว่างเปล่า
+      if (parsedParamsProduct?.name) {
+        setProductData(parsedParamsProduct);
+      } else {
+        setFetching(true);
+      }
+
+      let isMounted = true;
+
+      fetch(`${getProductsApiUrl()}/${targetId}`)
         .then((res) => res.json())
         .then((resData) => {
-          if (resData.success && resData.data) {
-            const d = resData.data;
-            setProductData({
-              id: String(d.Product_ID || d.id || params.id),
-              name: d.Name || d.name || '',
-              price: d.Price || d.price || 0,
-              stock: d.Stock || d.stock || 0,
-              category: d.Category || d.category || '',
-              location_text: d.Location || d.location || d.location_text || '',
-              image_url: d.image || d.image_url || '',
-              description: d.Description || d.description || '',
-              rating: d.Rating || d.rating || undefined,
-            });
-          } else {
-            Alert.alert('ข้อผิดพลาด', 'ไม่พบข้อมูลสินค้าที่ระบุ');
+          if (!isMounted) return;
+          const d = resData?.data ?? resData;
+          if (d && (d.id !== undefined || d.Product_ID !== undefined || d.name || d.Name)) {
+            const loadedProduct: ProductFormData = {
+              id: String(d.id ?? d.Product_ID ?? targetId),
+              name: d.name ?? d.Name ?? params.name ?? '',
+              category: d.category ?? d.Category ?? params.category ?? 'General',
+              price: Number(d.price ?? d.Price ?? params.price ?? 0),
+              stock: Number(
+                d.stock !== undefined
+                  ? d.stock
+                  : d.Stock !== undefined
+                  ? d.Stock
+                  : params.stock
+                  ? parseInt(params.stock, 10)
+                  : 0
+              ),
+              location_text:
+                d.location_text ??
+                d.location ??
+                d.Location ??
+                params.location_text ??
+                params.location ??
+                '',
+              image_url:
+                d.image_url ??
+                d.image ??
+                d.Image ??
+                params.image_url ??
+                params.image ??
+                '',
+              description: d.description ?? d.Description ?? params.description ?? '',
+              rating:
+                d.rating !== undefined
+                  ? Number(d.rating)
+                  : d.Rating !== undefined
+                  ? Number(d.Rating)
+                  : params.rating
+                  ? parseFloat(params.rating)
+                  : 5,
+            };
+            setProductData(loadedProduct);
+          } else if (!parsedParamsProduct?.name) {
+            const msg = 'ไม่พบข้อมูลสินค้าที่ต้องการแก้ไข';
+            if (Platform.OS === 'web') alert(msg);
+            else Alert.alert('ข้อผิดพลาด', msg);
           }
         })
         .catch((err) => {
+          if (!isMounted) return;
           console.error('Fetch edit product error:', err);
+          // หาก fetch ล้มเหลว แต่มีข้อมูลจาก params ให้คงข้อมูลนั้นไว้
+          if (!parsedParamsProduct?.name) {
+            const msg = 'เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า';
+            if (Platform.OS === 'web') alert(msg);
+            else Alert.alert('ข้อผิดพลาด', msg);
+          }
         })
         .finally(() => {
-          setFetching(false);
+          if (isMounted) {
+            setFetching(false);
+          }
         });
-    }
-  }, [params.id, initialProductData]);
+
+      return () => {
+        isMounted = false;
+      };
+    }, [propProduct, params.id, parsedParamsProduct])
+  );
 
   const handleSuccess = () => {
     if (onSuccess) {
@@ -100,7 +165,7 @@ export default function EditProductScreen({
     } else if (router.canGoBack()) {
       router.back();
     } else {
-      router.push('/product');
+      router.push('/product' as any);
     }
   };
 
@@ -110,11 +175,11 @@ export default function EditProductScreen({
     } else if (router.canGoBack()) {
       router.back();
     } else {
-      router.push('/product');
+      router.push('/product' as any);
     }
   };
 
-  if (fetching) {
+  if (fetching && !productData) {
     return (
       <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#6cc349" />
@@ -125,6 +190,7 @@ export default function EditProductScreen({
 
   return (
     <AddScreen
+      key={productData?.id ?? params.id ?? 'edit-screen'}
       product={productData}
       onSuccess={handleSuccess}
       onCancel={handleCancel}

@@ -4,7 +4,7 @@
  * ใช้ร่วมกันระหว่างหน้า add.tsx และ edit.tsx เพื่อลดโค้ดซ้ำซ้อน
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -43,22 +43,51 @@ export function ProductForm({
 }: ProductFormProps) {
   const theme = useTheme();
 
+  const getInitialLoc = () => initialData?.location_text ?? (initialData as any)?.location ?? '';
+  const getInitialImg = () => initialData?.image_url ?? (initialData as any)?.image ?? '';
+
   // สถานะข้อมูลฟอร์ม
   const [name, setName] = useState(initialData?.name ?? '');
   const [price, setPrice] = useState(
-    initialData?.price !== undefined ? String(initialData.price) : ''
+    initialData?.price !== undefined && initialData?.price !== null ? String(initialData.price) : ''
   );
   const [stock, setStock] = useState(
-    initialData?.stock !== undefined ? String(initialData.stock) : '10'
+    initialData?.stock !== undefined && initialData?.stock !== null ? String(initialData.stock) : '10'
   );
-  const [location, setLocation] = useState(initialData?.location_text ?? '');
-  const [imageUrl, setImageUrl] = useState(initialData?.image_url ?? '');
-  const [imagePreview, setImagePreview] = useState<string | null>(initialData?.image_url ?? null);
+  const [location, setLocation] = useState(getInitialLoc());
+  const [imageUrl, setImageUrl] = useState(getInitialImg());
+  const [imagePreview, setImagePreview] = useState<string | null>(getInitialImg() || null);
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     initialData?.category ?? 'Gaming'
   );
-  const [rating, setRating] = useState<number>(initialData?.rating ?? 5);
+  const [rating, setRating] = useState<number>(
+    initialData?.rating !== undefined && initialData?.rating !== null ? Number(initialData.rating) : 5
+  );
+
+  // อัปเดตข้อมูลฟอร์มทันทีเมื่อ initialData มีการเปลี่ยนแปลง (เช่น โหลดเสร็จจาก API หรือเปลี่ยนสินค้า)
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name ?? '');
+      setPrice(
+        initialData.price !== undefined && initialData.price !== null ? String(initialData.price) : ''
+      );
+      setStock(
+        initialData.stock !== undefined && initialData.stock !== null ? String(initialData.stock) : '10'
+      );
+      const loc = initialData.location_text ?? (initialData as any)?.location ?? '';
+      setLocation(loc);
+      const img = initialData.image_url ?? (initialData as any)?.image ?? '';
+      setImageUrl(img);
+      setImagePreview(img || null);
+      setDescription(initialData.description ?? '');
+      setSelectedCategory(initialData.category ?? 'Gaming');
+      setRating(
+        initialData.rating !== undefined && initialData.rating !== null ? Number(initialData.rating) : 5
+      );
+      setErrorMsg(null);
+    }
+  }, [initialData]);
 
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
