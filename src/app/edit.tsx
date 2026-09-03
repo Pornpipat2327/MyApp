@@ -1,10 +1,10 @@
 /**
  * @file edit.tsx
  * @description หน้าจอแก้ไขข้อมูลสินค้า (Edit Product Screen)
- * ดึงข้อมูลสินค้าเดิมจาก Route Params หรือจาก REST API แล้วนำมาแสดงในฟอร์มเพื่อแก้ไข
+ * ดึงข้อมูลสินค้าเดิมจาก REST API ตามรหัสสินค้า (ID) แล้วนำมาแสดงในฟอร์มเพื่อแก้ไข
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { ActivityIndicator, Text, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import AddScreen from './add';
@@ -24,7 +24,7 @@ export default function EditProductScreen({
   onCancel,
 }: EditProductScreenProps = {}) {
   const router = useRouter();
-  const params = useLocalSearchParams<{
+  const searchParams = useLocalSearchParams<{
     id?: string;
     name?: string;
     price?: string;
@@ -38,125 +38,126 @@ export default function EditProductScreen({
     rating?: string;
   }>();
 
-  // สร้างข้อมูลเริ่มต้นจาก params ถ้ามีส่งมาด้วย
-  const parsedParamsProduct = useMemo<ProductFormData | null>(() => {
-    if (params.id) {
-      return {
-        id: String(params.id),
-        name: params.name || '',
-        price: params.price ? parseFloat(params.price) : 0,
-        stock: params.stock ? parseInt(params.stock, 10) : 0,
-        category: params.category || 'General',
-        location_text: params.location_text || params.location || '',
-        image_url: params.image_url || params.image || '',
-        description: params.description || '',
-        rating: params.rating ? parseFloat(params.rating) : 5,
-      };
-    }
-    return null;
-  }, [params]);
+  // ดึงค่าเฉพาะ Primitive ID เพื่อป้องกันปัญหา Reference loop ใน useCallback
+  const paramId = searchParams.id ? String(searchParams.id) : undefined;
 
-  const [productData, setProductData] = useState<ProductFormData | null>(
-    propProduct ?? (parsedParamsProduct?.name ? parsedParamsProduct : null)
-  );
-  const [fetching, setFetching] = useState<boolean>(false);
+  const [productData, setProductData] = useState<ProductFormData | null>(propProduct ?? null);
+  const [fetching, setFetching] = useState<boolean>(!propProduct && !!paramId);
+  const isMountedRef = useRef(true);
 
   // ดึงข้อมูลสินค้าล่าสุดจาก Backend API ทุกครั้งที่เข้าสู่หน้านี้
   useFocusEffect(
     useCallback(() => {
+      isMountedRef.current = true;
+
+      // 1. หากได้รับ product ผ่าน Prop โดยตรง
       if (propProduct) {
         setProductData(propProduct);
         setFetching(false);
         return;
       }
 
-      const targetId = params.id;
-      if (!targetId) {
+      // 2. หากไม่มี id
+      if (!paramId) {
         setFetching(false);
         setProductData(null);
         return;
       }
 
-      // หากมี params ข้อมูลเบื้องต้น ให้แสดงทันทีเพื่อป้องกันหน้าจอว่างเปล่า
-      if (parsedParamsProduct?.name) {
-        setProductData(parsedParamsProduct);
-      } else {
-        setFetching(true);
-      }
+      // 3. เริ่มดึงข้อมูลสินค้าจาก API
+      setFetching(true);
 
-      let isMounted = true;
-
-      fetch(`${getProductsApiUrl()}/${targetId}`)
+      fetch(`${getProductsApiUrl()}/${paramId}`)
         .then((res) => res.json())
         .then((resData) => {
-          if (!isMounted) return;
+          if (!isMountedRef.current) return;
           const d = resData?.data ?? resData;
           if (d && (d.id !== undefined || d.Product_ID !== undefined || d.name || d.Name)) {
             const loadedProduct: ProductFormData = {
-              id: String(d.id ?? d.Product_ID ?? targetId),
-              name: d.name ?? d.Name ?? params.name ?? '',
-              category: d.category ?? d.Category ?? params.category ?? 'General',
-              price: Number(d.price ?? d.Price ?? params.price ?? 0),
+              id: String(d.id ?? d.Product_ID ?? paramId),
+              name: d.name ?? d.Name ?? '',
+              category: d.category ?? d.Category ?? 'General',
+              price: Number(d.price ?? d.Price ?? 0),
               stock: Number(
                 d.stock !== undefined
                   ? d.stock
                   : d.Stock !== undefined
                   ? d.Stock
-                  : params.stock
-                  ? parseInt(params.stock, 10)
                   : 0
               ),
               location_text:
                 d.location_text ??
                 d.location ??
                 d.Location ??
-                params.location_text ??
-                params.location ??
                 '',
               image_url:
                 d.image_url ??
                 d.image ??
                 d.Image ??
-                params.image_url ??
-                params.image ??
                 '',
-              description: d.description ?? d.Description ?? params.description ?? '',
+              description: d.description ?? d.Description ?? '',
               rating:
                 d.rating !== undefined
                   ? Number(d.rating)
                   : d.Rating !== undefined
                   ? Number(d.Rating)
-                  : params.rating
-                  ? parseFloat(params.rating)
                   : 5,
             };
             setProductData(loadedProduct);
-          } else if (!parsedParamsProduct?.name) {
-            const msg = 'ไม่พบข้อมูลสินค้าที่ต้องการแก้ไข';
-            if (Platform.OS === 'web') alert(msg);
-            else Alert.alert('ข้อผิดพลาด', msg);
+          } else {
+            // หาก Backend ไม่พบข้อมูล และมีข้อมูลสำรองจาก params
+            if (searchParams.name) {
+              setProductData({
+                id: paramId,
+                name: searchParams.name,
+                category: searchParams.category || 'General',
+                price: searchParams.price ? parseFloat(searchParams.price) : 0,
+                stock: searchParams.stock ? parseInt(searchParams.stock, 10) : 0,
+                location_text: searchParams.location_text || searchParams.location || '',
+                image_url: searchParams.image_url || searchParams.image || '',
+                description: searchParams.description || '',
+                rating: searchParams.rating ? parseFloat(searchParams.rating) : 5,
+              });
+            } else {
+              const msg = 'ไม่พบข้อมูลสินค้าที่ต้องการแก้ไข';
+              if (Platform.OS === 'web') alert(msg);
+              else Alert.alert('ข้อผิดพลาด', msg);
+            }
           }
         })
         .catch((err) => {
-          if (!isMounted) return;
+          if (!isMountedRef.current) return;
           console.error('Fetch edit product error:', err);
-          // หาก fetch ล้มเหลว แต่มีข้อมูลจาก params ให้คงข้อมูลนั้นไว้
-          if (!parsedParamsProduct?.name) {
+
+          // Fallback ข้อมูลจาก params หาก API ขัดข้อง
+          if (searchParams.name) {
+            setProductData({
+              id: paramId,
+              name: searchParams.name,
+              category: searchParams.category || 'General',
+              price: searchParams.price ? parseFloat(searchParams.price) : 0,
+              stock: searchParams.stock ? parseInt(searchParams.stock, 10) : 0,
+              location_text: searchParams.location_text || searchParams.location || '',
+              image_url: searchParams.image_url || searchParams.image || '',
+              description: searchParams.description || '',
+              rating: searchParams.rating ? parseFloat(searchParams.rating) : 5,
+            });
+          } else {
             const msg = 'เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า';
             if (Platform.OS === 'web') alert(msg);
             else Alert.alert('ข้อผิดพลาด', msg);
           }
         })
         .finally(() => {
-          if (isMounted) {
+          if (isMountedRef.current) {
             setFetching(false);
           }
         });
 
       return () => {
-        isMounted = false;
+        isMountedRef.current = false;
       };
-    }, [propProduct, params.id, parsedParamsProduct])
+    }, [paramId, propProduct])
   );
 
   const handleSuccess = () => {
@@ -190,7 +191,7 @@ export default function EditProductScreen({
 
   return (
     <AddScreen
-      key={productData?.id ?? params.id ?? 'edit-screen'}
+      key={productData?.id ?? paramId ?? 'edit-screen'}
       product={productData}
       onSuccess={handleSuccess}
       onCancel={handleCancel}
