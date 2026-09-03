@@ -5,7 +5,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { getStorageItem, setStorageItem, removeStorageItem, getStorageJSON, subscribeStorageChange, emitStorageChange } from '@/utils/storage';
 
 /** โครงสร้างข้อมูลสินค้าแต่ละชิ้นในตะกร้า */
 export interface CartItem {
@@ -77,75 +77,59 @@ const COUPON_STORAGE_KEY = 'extreme_keys_coupon';
 export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // โหลดข้อมูลเริ่มต้นผ่าน Lazy Initializer เพื่อขจัดปัญหา Cascading Renders / setState in effect
+  // โหลดข้อมูลเริ่มต้นจาก Storage (อ่านจาก in-memory cache ที่ initStorage() โหลดมาแล้ว)
   const [items, setItems] = useState<CartItem[]>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-        if (savedCart) return JSON.parse(savedCart);
-      } catch (e) {
-        console.error('Failed to parse cart storage', e);
-      }
+    try {
+      return getStorageJSON<CartItem[]>(CART_STORAGE_KEY, []);
+    } catch {
+      return [];
     }
-    return [];
   });
 
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const savedCoupon = localStorage.getItem(COUPON_STORAGE_KEY);
-        if (savedCoupon) return JSON.parse(savedCoupon);
-      } catch (e) {
-        console.error('Failed to parse coupon storage', e);
-      }
+    try {
+      return getStorageJSON<Coupon | null>(COUPON_STORAGE_KEY, null);
+    } catch {
+      return null;
     }
-    return null;
   });
 
-  // บันทึกตะกร้าลง LocalStorage เมื่อมีการเปลี่ยนแปลง
+  // บันทึกตะกร้าลง Storage เมื่อมีการเปลี่ยนแปลง
   const persistCart = useCallback((newItems: CartItem[]) => {
     setItems(newItems);
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newItems));
-        window.dispatchEvent(new Event('cart-change'));
-      } catch (e) {
-        console.error('Failed to persist cart', e);
-      }
+    try {
+      setStorageItem(CART_STORAGE_KEY, JSON.stringify(newItems));
+      emitStorageChange('cart-change');
+    } catch (e) {
+      console.error('Failed to persist cart', e);
     }
   }, []);
 
-  // บันทึกคูปองลง LocalStorage
+  // บันทึกคูปองลง Storage
   const persistCoupon = useCallback((coupon: Coupon | null) => {
     setAppliedCoupon(coupon);
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        if (coupon) {
-          localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(coupon));
-        } else {
-          localStorage.removeItem(COUPON_STORAGE_KEY);
-        }
-      } catch (e) {
-        console.error('Failed to persist coupon', e);
+    try {
+      if (coupon) {
+        setStorageItem(COUPON_STORAGE_KEY, JSON.stringify(coupon));
+      } else {
+        removeStorageItem(COUPON_STORAGE_KEY);
       }
+    } catch (e) {
+      console.error('Failed to persist coupon', e);
     }
   }, []);
 
-  // ซิงค์การเปลี่ยนแปลงจากแท็บอื่นๆ
+  // ซิงค์การเปลี่ยนแปลงจากแท็บอื่นๆ (บน Web) หรือ Process อื่น
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const handleStorageChange = () => {
-        try {
-          const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-          if (savedCart) setItems(JSON.parse(savedCart));
-          const savedCoupon = localStorage.getItem(COUPON_STORAGE_KEY);
-          if (savedCoupon) setAppliedCoupon(JSON.parse(savedCoupon));
-        } catch {}
-      };
-
-      window.addEventListener('storage', handleStorageChange);
-      return () => window.removeEventListener('storage', handleStorageChange);
-    }
+    const handleStorageChange = () => {
+      try {
+        const savedCart = getStorageItem(CART_STORAGE_KEY);
+        if (savedCart) setItems(JSON.parse(savedCart));
+        const savedCoupon = getStorageItem(COUPON_STORAGE_KEY);
+        setAppliedCoupon(savedCoupon ? JSON.parse(savedCoupon) : null);
+      } catch {}
+    };
+    return subscribeStorageChange('cart-change', handleStorageChange);
   }, []);
 
   /**
@@ -190,12 +174,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ];
         }
 
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated));
-            window.dispatchEvent(new Event('cart-change'));
-          } catch {}
-        }
+        // Persist ทันทีผ่าน Universal Storage
+        try {
+          setStorageItem(CART_STORAGE_KEY, JSON.stringify(updated));
+          emitStorageChange('cart-change');
+        } catch {}
 
         return updated;
       });
@@ -210,12 +193,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (id: string | number) => {
       setItems((prev) => {
         const updated = prev.filter((item) => String(item.id) !== String(id));
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated));
-            window.dispatchEvent(new Event('cart-change'));
-          } catch {}
-        }
+        // Persist ทันทีผ่าน Universal Storage
+        try {
+          setStorageItem(CART_STORAGE_KEY, JSON.stringify(updated));
+          emitStorageChange('cart-change');
+        } catch {}
         return updated;
       });
     },
@@ -235,12 +217,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const updated = prev.map((item) =>
           String(item.id) === String(id) ? { ...item, quantity } : item
         );
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated));
-            window.dispatchEvent(new Event('cart-change'));
-          } catch {}
-        }
+        // Persist ทันทีผ่าน Universal Storage
+        try {
+          setStorageItem(CART_STORAGE_KEY, JSON.stringify(updated));
+          emitStorageChange('cart-change');
+        } catch {}
         return updated;
       });
     },

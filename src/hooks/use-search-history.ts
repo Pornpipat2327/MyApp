@@ -1,10 +1,10 @@
 /**
  * @file use-search-history.ts
- * @description Hook จัดการประวัติการค้นหาล่าสุด (Search History) และแท็กคำค้นหายอดนิยม
+ * @description Hook จัดการประวัติการค้นหาล่าสุด (Search History) — Cross-platform
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { getStorageItem, setStorageItem, removeStorageItem, subscribeStorageChange } from '@/utils/storage';
 
 const RECENT_SEARCHES_KEY = 'extreme_keys_recent_searches';
 const MAX_RECENT_SEARCHES = 6;
@@ -12,46 +12,26 @@ const MAX_RECENT_SEARCHES = 6;
 /** รายการแท็กหมวดหมู่ยอดนิยมสำหรับแนะนำการค้นหา */
 export const POPULAR_TAGS = ['Wireless', 'Gaming', 'Mechanical', 'Compact', 'Vintage', 'Ergonomic'];
 
+function loadSearches(): string[] {
+  try {
+    const raw = getStorageItem(RECENT_SEARCHES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.slice(0, MAX_RECENT_SEARCHES);
+  } catch {}
+  return [];
+}
+
 export function useSearchHistory() {
-  // โหลดข้อมูลประวัติเริ่มต้นจาก LocalStorage แบบ Lazy Initializer
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            return parsed.slice(0, MAX_RECENT_SEARCHES);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse recent searches', e);
-      }
-    }
-    return [];
-  });
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => loadSearches());
 
-  const syncSearches = useCallback(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(RECENT_SEARCHES_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setRecentSearches(parsed.slice(0, MAX_RECENT_SEARCHES));
-          }
-        }
-      } catch {}
-    }
-  }, []);
-
-  // ดักจับการเปลี่ยนแปลงจากแท็บอื่นๆ
+  // ซิงค์เมื่อ storage เปลี่ยนแปลงจากแหล่งอื่น (บน Web: ซิงค์จากแท็บอื่น)
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.addEventListener('storage', syncSearches);
-      return () => window.removeEventListener('storage', syncSearches);
-    }
-  }, [syncSearches]);
+    const syncSearches = () => {
+      setRecentSearches(loadSearches());
+    };
+    return subscribeStorageChange('search-history-change', syncSearches);
+  }, []);
 
   /**
    * เพิ่มประวัติคำค้นหาใหม่
@@ -66,11 +46,9 @@ export function useSearchHistory() {
         ...prev.filter((item) => item.toLowerCase() !== trimmed.toLowerCase()),
       ].slice(0, MAX_RECENT_SEARCHES);
 
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-        } catch {}
-      }
+      try {
+        setStorageItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+      } catch {}
 
       return updated;
     });
@@ -85,11 +63,9 @@ export function useSearchHistory() {
         (item) => item.toLowerCase() !== queryToRemove.toLowerCase()
       );
 
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
-        } catch {}
-      }
+      try {
+        setStorageItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+      } catch {}
 
       return updated;
     });
@@ -100,11 +76,9 @@ export function useSearchHistory() {
    */
   const clearSearches = useCallback(() => {
     setRecentSearches([]);
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(RECENT_SEARCHES_KEY);
-      } catch {}
-    }
+    try {
+      removeStorageItem(RECENT_SEARCHES_KEY);
+    } catch {}
   }, []);
 
   return {

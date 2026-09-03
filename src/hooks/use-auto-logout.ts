@@ -1,15 +1,17 @@
 /**
  * @file use-auto-logout.ts
- * @description Hook จัดการระบบตัดเซสชันอัตโนมัติ (Auto Logout)
- * 
+ * @description Hook จัดการระบบตัดเซสชันอัตโนมัติ (Auto Logout) — Cross-platform
+ *
  * เงื่อนไขการทำงาน:
- * 1. เมื่อสลับไปใช้แอปอื่น หรือสลับแท็บเบราว์เซอร์ -> ไม่ตัดเซสชัน
- * 2. เมื่อปิดหน้าต่าง/ปิดแท็บเบราว์เซอร์ แล้วเปิดแอปใหม่ -> ตรวจสอบและสั่ง Logout พร้อมนำทางไปหน้า /login
+ * - บน Web: เมื่อปิดแท็บแล้วเปิดใหม่ -> ตัดเซสชัน
+ * - บน Mobile: ระบบ sessionStorage ไม่มี จึงข้ามขั้นตอน session-alive check
+ *   (Mobile OS จัดการ lifetime ของ session ผ่าน AsyncStorage ซึ่งข้อมูลยังอยู่เมื่อ kill แอป)
  */
 
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
+import { getStorageItem, removeStorageItem, subscribeStorageChange, emitStorageChange } from '@/utils/storage';
 
 const SESSION_ALIVE_KEY = 'extreme_keys_session_alive';
 
@@ -18,28 +20,29 @@ export function useAutoLogout() {
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
 
-  // อัปเดต ref ภายใน useEffect เพื่อปฏิบัติตามกฎของ React ไม่แก้ไข ref ระหว่าง Render
   useEffect(() => {
     pathnameRef.current = pathname;
   }, [pathname]);
 
   useEffect(() => {
+    // บน Mobile: ไม่ใช้ sessionStorage เพราะไม่มี
+    // Mobile ใช้ AsyncStorage ซึ่งข้อมูลคงอยู่ตลอดอายุของแอป
     if (Platform.OS !== 'web' || typeof window === 'undefined') {
       return;
     }
 
     const checkSessionOnStartup = () => {
       try {
-        const user = localStorage.getItem('user');
+        const user = getStorageItem('user');
         const isSessionAlive = sessionStorage.getItem(SESSION_ALIVE_KEY);
 
         if (user) {
           if (!isSessionAlive) {
             // ปิดแท็บไปแล้วเปิดใหม่ -> สั่ง Logout และล้างข้อมูล
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
+            removeStorageItem('user');
+            removeStorageItem('token');
             sessionStorage.removeItem(SESSION_ALIVE_KEY);
-            window.dispatchEvent(new Event('auth-change'));
+            emitStorageChange('auth-change');
 
             if (pathnameRef.current !== '/login') {
               router.replace('/login' as any);
@@ -56,7 +59,7 @@ export function useAutoLogout() {
     // ดักจับเมื่อมีการ Login หรือ Logout
     const handleAuthChange = () => {
       try {
-        const user = localStorage.getItem('user');
+        const user = getStorageItem('user');
         if (user) {
           sessionStorage.setItem(SESSION_ALIVE_KEY, 'true');
         } else {
@@ -65,19 +68,17 @@ export function useAutoLogout() {
       } catch {}
     };
 
-    window.addEventListener('auth-change', handleAuthChange);
+    const unsub = subscribeStorageChange('auth-change', handleAuthChange);
 
     // ล้าง session_alive ถ้าอยู่ที่หน้า Login และไม่มี User
     if (pathname === '/login') {
       try {
-        if (!localStorage.getItem('user')) {
+        if (!getStorageItem('user')) {
           sessionStorage.removeItem(SESSION_ALIVE_KEY);
         }
       } catch {}
     }
 
-    return () => {
-      window.removeEventListener('auth-change', handleAuthChange);
-    };
+    return unsub;
   }, [router, pathname]);
 }

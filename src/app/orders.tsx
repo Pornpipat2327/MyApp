@@ -2,6 +2,7 @@
  * @file orders.tsx
  * @description หน้าจอแสดงรายการคำสั่งซื้อทั้งหมด สไตล์ Minecraft Voxel Design System
  * 0px Voxel Doctrine, Admin Stats Banner with Green Stripe, Dark Border (#3d3938), และ Surface Mid Filter Section
+ * รองรับทั้ง Admin (จัดการทุกออเดอร์/อัปเดตสถานะ) และ User ทั่วไป (ดูประวัติการสั่งซื้อของตนเอง)
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -10,7 +11,6 @@ import {
   ScrollView,
   View,
   Pressable,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,7 +22,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { Order, OrderStatus } from '@/types/order';
 import { OrderFilters } from '@/components/orders/order-filters';
 import { OrderCard } from '@/components/orders/order-card';
-import { getStorageJSON, setStorageJSON } from '@/utils/storage';
+import { getStorageJSON, setStorageJSON, subscribeStorageChange, emitStorageChange } from '@/utils/storage';
 
 const SEED_ORDERS: Order[] = [
   {
@@ -55,68 +55,100 @@ const SEED_ORDERS: Order[] = [
     paymentStatus: 'paid',
     trackingNumber: 'TH847291048TH',
   },
+  {
+    id: 'EK-47102',
+    username: 'user',
+    userRole: 'user',
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    status: 'processing',
+    items: [
+      {
+        id: 'seed-2',
+        name: 'Retro Classic RGB Mechanical Keyboard',
+        price: 89.00,
+        quantity: 1,
+        category: 'Vintage',
+      },
+    ],
+    subtotal: 89.00,
+    shippingFee: 10,
+    discount: 0,
+    totalAmount: 99.00,
+    shippingAddress: {
+      recipientName: 'User Member',
+      phone: '081-987-6543',
+      address: '123 Phahonyothin Rd',
+      city: 'Bangkok',
+      postalCode: '10400',
+    },
+    paymentMethod: 'bank_transfer',
+    paymentStatus: 'paid',
+    trackingNumber: 'TH592019482TH',
+  },
 ];
 
 export default function OrdersScreen() {
   const router = useRouter();
 
-  // ดึงข้อมูลผู้ใช้ปัจจุบันแบบ Lazy Initializer
-  const [currentUser] = useState<any>(() => {
+  // ดึงข้อมูลผู้ใช้ปัจจุบันแบบ Dynamic
+  const [currentUser, setCurrentUser] = useState<any>(() => {
     return getStorageJSON('user', null);
   });
+
+  useEffect(() => {
+    const updateCurrentUser = () => {
+      setCurrentUser(getStorageJSON('user', null));
+    };
+    return subscribeStorageChange('auth-change', updateCurrentUser);
+  }, []);
 
   const isAdmin = useMemo(() => {
     return (currentUser?.role || '').toLowerCase() === 'admin';
   }, [currentUser]);
 
-  // โหลดรายการคำสั่งซื้อจาก LocalStorage แบบ Lazy Initializer เพื่อขจัด cascading setState
+  // โหลดรายการคำสั่งซื้อจาก Universal Storage
   const [orders, setOrders] = useState<Order[]>(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const stored = getStorageJSON<Order[]>('extreme_keys_orders', []);
-        if (stored && stored.length > 0) return stored;
-        setStorageJSON('extreme_keys_orders', SEED_ORDERS);
-        return SEED_ORDERS;
-      } catch (e) {
-        console.error('Failed to init orders', e);
+    try {
+      const stored = getStorageJSON<Order[]>('extreme_keys_orders', []);
+      if (stored && stored.length > 0) {
+        // หากใน storage มีแค่ออเดอร์ admin ตัวเดียว ให้รวม seed orders เข้าไปด้วยเพื่อให้ user เห็นออเดอร์
+        const hasUserOrder = stored.some((o) => o.username !== 'admin');
+        if (!hasUserOrder) {
+          const merged = [...stored, SEED_ORDERS[1]];
+          setStorageJSON('extreme_keys_orders', merged);
+          return merged;
+        }
+        return stored;
       }
+      setStorageJSON('extreme_keys_orders', SEED_ORDERS);
+      return SEED_ORDERS;
+    } catch {
+      return SEED_ORDERS;
     }
-    return SEED_ORDERS;
   });
 
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const syncOrders = useCallback(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const stored = getStorageJSON<Order[]>('extreme_keys_orders', []);
-        if (stored) setOrders(stored);
-      } catch {}
-    }
+    try {
+      const stored = getStorageJSON<Order[]>('extreme_keys_orders', []);
+      if (stored) setOrders(stored);
+    } catch {}
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.addEventListener('orders-change', syncOrders);
-      window.addEventListener('storage', syncOrders);
-      return () => {
-        window.removeEventListener('orders-change', syncOrders);
-        window.removeEventListener('storage', syncOrders);
-      };
-    }
+    return subscribeStorageChange('orders-change', syncOrders);
   }, [syncOrders]);
 
   const handleUpdateStatus = useCallback(
     (orderId: string, newStatus: OrderStatus) => {
       setOrders((prev) => {
         const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          try {
-            setStorageJSON('extreme_keys_orders', updated);
-            window.dispatchEvent(new Event('orders-change'));
-          } catch {}
-        }
+        try {
+          setStorageJSON('extreme_keys_orders', updated);
+          emitStorageChange('orders-change');
+        } catch {}
         return updated;
       });
     },
@@ -147,13 +179,21 @@ export default function OrdersScreen() {
     return orders.filter((o) => o.status === 'pending').length;
   }, [orders]);
 
+  // กรองคำสั่งซื้อ: Admin เห็นทั้งหมด, User เห็นของตนเอง + Guest + Seed
   const filteredOrders = useMemo(() => {
     let list = [...orders];
 
-    if (!isAdmin && currentUser?.username) {
-      list = list.filter(
-        (o) => o.username === currentUser.username || !o.username || o.username === 'Guest'
-      );
+    if (!isAdmin) {
+      const activeUsername = (currentUser?.username || '').toLowerCase().trim();
+      list = list.filter((o) => {
+        const orderUser = (o.username || '').toLowerCase().trim();
+        return (
+          (activeUsername && orderUser === activeUsername) ||
+          orderUser === 'guest' ||
+          orderUser === 'user' ||
+          !orderUser
+        );
+      });
     }
 
     if (selectedFilter !== 'all') {
@@ -193,7 +233,7 @@ export default function OrdersScreen() {
             <ThemedText type="smallBold">Back</ThemedText>
           </Pressable>
           <ThemedText type="smallBold" style={styles.headerTitle}>
-            {isAdmin ? '👑 Customer Orders Management' : 'My Orders History'}
+            {isAdmin ? '👑 Customer Orders Management' : '📦 My Orders History'}
           </ThemedText>
           <View style={{ width: 60 }} />
         </View>
@@ -258,11 +298,26 @@ export default function OrdersScreen() {
                   size={48}
                 />
                 <ThemedText type="smallBold" style={{ marginTop: 8 }}>
-                  No Orders Found
+                  {isAdmin ? 'No Orders Found' : 'ยังไม่มีประวัติการสั่งซื้อ (No Orders Yet)'}
                 </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  No orders match your current filter criteria.
+                <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center', marginTop: 4, maxWidth: 300 }}>
+                  {isAdmin
+                    ? 'No orders match your current filter criteria.'
+                    : 'คุณยังไม่มีรายการสั่งซื้อ เริ่มต้นเลือกซื้อคีย์บอร์ดที่คุณชอบได้เลย!'}
                 </ThemedText>
+                {!isAdmin && (
+                  <Pressable
+                    onPress={() => router.push('/product')}
+                    style={({ pressed }) => [
+                      styles.shopNowBtn,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+                      🛒 เลือกซื้อสินค้า (Explore Products)
+                    </ThemedText>
+                  </Pressable>
+                )}
               </ThemedView>
             ) : (
               <View style={styles.ordersList}>
@@ -295,8 +350,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderBottomWidth: 2,
+    paddingVertical: Spacing.three,
+    borderBottomWidth: 1,
     borderBottomColor: '#3d3938',
   },
   backButton: {
@@ -351,6 +406,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3d3938',
     gap: 6,
+  },
+  shopNowBtn: {
+    backgroundColor: '#3c8527',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 0,
+    marginTop: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#262423',
   },
   pressed: {
     opacity: 0.7,

@@ -23,7 +23,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getLoginApiUrl, getBaseUrl } from '@/constants/api';
-import { getStorageJSON, setStorageItem, removeStorageItem } from '@/utils/storage';
+import { getStorageJSON, setStorageItem, removeStorageItem, emitStorageChange } from '@/utils/storage';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -70,13 +70,12 @@ export default function LoginScreen() {
           token: data.token,
         };
 
-        if (Platform.OS === 'web') {
-          setStorageItem('user', JSON.stringify(userData));
-          if (data.token) {
-            setStorageItem('token', data.token);
-          }
-          window.dispatchEvent(new Event('auth-change'));
+        // บันทึกข้อมูลผ่าน Universal Storage (ทำงานทั้งบน Mobile และ Web)
+        setStorageItem('user', JSON.stringify(userData));
+        if (data.token) {
+          setStorageItem('token', data.token);
         }
+        emitStorageChange('auth-change');
 
         setUser(userData);
         router.replace('/');
@@ -127,11 +126,10 @@ export default function LoginScreen() {
   };
 
   const handleLogout = () => {
-    if (Platform.OS === 'web') {
-      removeStorageItem('user');
-      removeStorageItem('token');
-      window.dispatchEvent(new Event('auth-change'));
-    }
+    // ลบข้อมูลผ่าน Universal Storage (ทำงานทั้งบน Mobile และ Web)
+    removeStorageItem('user');
+    removeStorageItem('token');
+    emitStorageChange('auth-change');
     setUser(null);
     setUsername('');
     setPassword('');
@@ -178,10 +176,23 @@ export default function LoginScreen() {
                 </View>
 
                 <Pressable
+                  onPress={() => router.push('/orders' as any)}
+                  style={({ pressed }) => [
+                    styles.submitButton,
+                    { backgroundColor: '#3c8527', marginTop: Spacing.four },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <ThemedText type="smallBold" style={styles.submitButtonText}>
+                    📦 ดูประวัติการสั่งซื้อ (My Orders)
+                  </ThemedText>
+                </Pressable>
+
+                <Pressable
                   onPress={handleLogout}
                   style={({ pressed }) => [
                     styles.submitButton,
-                    { backgroundColor: '#ff605e', marginTop: Spacing.four },
+                    { backgroundColor: '#ff605e', marginTop: Spacing.two },
                     pressed && styles.pressed,
                   ]}
                 >

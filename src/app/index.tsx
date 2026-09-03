@@ -25,7 +25,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { getProductsApiUrl } from '@/constants/api';
 import { Product } from '@/types/product';
 import { getImageSource } from '@/utils/image';
-import { getStorageJSON } from '@/utils/storage';
+import { getStorageJSON, getStorageItem, subscribeStorageChange } from '@/utils/storage';
 
 const QUICK_ACTIONS = [
   { id: 'qa1', label: 'Add Product', icon: { ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as const, color: '#007AFF', route: '/add' as const },
@@ -76,28 +76,24 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const checkUser = () => {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const savedUser = localStorage.getItem('user');
-        if (!savedUser) {
+      const savedUser = getStorageItem('user');
+      if (!savedUser) {
+        router.replace('/login' as any);
+      } else {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setIsAdmin((parsedUser?.role || '').toLowerCase() === 'admin');
+        } catch {
           router.replace('/login' as any);
-        } else {
-          try {
-            const parsedUser = JSON.parse(savedUser);
-            setUser(parsedUser);
-            setIsAdmin((parsedUser?.role || '').toLowerCase() === 'admin');
-          } catch {
-            router.replace('/login' as any);
-          }
         }
       }
     };
 
     checkUser();
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.addEventListener('storage', checkUser);
-      window.addEventListener('auth-change', checkUser);
-    }
+    // ดักฟังเหตุการณ์ auth-change ผ่าน Universal Event Emitter (ทำงานทั้งบน Mobile และ Web)
+    const unsubAuth = subscribeStorageChange('auth-change', checkUser);
 
     let isMounted = true;
     fetch(getProductsApiUrl())
@@ -114,10 +110,7 @@ export default function HomeScreen() {
 
     return () => {
       isMounted = false;
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.removeEventListener('storage', checkUser);
-        window.removeEventListener('auth-change', checkUser);
-      }
+      unsubAuth();
     };
   }, [router]);
 
@@ -251,7 +244,7 @@ export default function HomeScreen() {
                     >
                       <View style={styles.productRow}>
                         {imgSrc ? (
-                          <Image source={imgSrc} style={styles.productThumb} resizeMode="cover" />
+                          <Image source={imgSrc} style={styles.productThumb} resizeMode="contain" />
                         ) : (
                           <View
                             style={[
@@ -468,6 +461,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 0, // 0px voxel doctrine
+    backgroundColor: '#ffffff',
   },
   productInfo: {
     flex: 1,

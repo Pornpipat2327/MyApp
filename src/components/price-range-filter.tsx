@@ -3,8 +3,9 @@
  * @description คอมโพเนนต์ตัวกรองช่วงราคาแบบ Dual Slider (Min-Max)
  * รองรับทั้งการลากบน Web (Pointer Events 60 FPS) และ Mobile (PanResponder) พร้อมช่องกรอกตัวเลขแบบ Manual
  */
+/* eslint-disable react-hooks/refs */
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -116,43 +117,72 @@ export function PriceRangeFilter({
     [absoluteMin, absoluteMax, minPrice, maxPrice, updateRange]
   );
 
-  // Mobile PanResponder สำหรับ Min Handle (Left)
-  const minPanResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderMove: (_, gestureState) => {
-          if (trackWidth <= 0) return;
-          const currentPercent = (minPrice - absoluteMin) / (absoluteMax - absoluteMin);
-          const currentPx = currentPercent * trackWidth;
-          const targetPx = Math.max(0, Math.min(currentPx + gestureState.dx, trackWidth));
-          const newRatio = targetPx / trackWidth;
-          const newVal = Math.round(absoluteMin + newRatio * (absoluteMax - absoluteMin));
-          updateRange(Math.min(newVal, maxPrice), maxPrice);
-        },
-      }),
-    [absoluteMin, absoluteMax, minPrice, maxPrice, trackWidth, updateRange]
-  );
+  // Mobile PanResponder — ใช้ useRef เพื่อเก็บค่า state ล่าสุดใน handlers โดยไม่ต้อง recreate
+  const minStartOffsetRef = useRef<number>(0);
+  const maxStartOffsetRef = useRef<number>(0);
 
-  // Mobile PanResponder สำหรับ Max Handle (Right)
-  const maxPanResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderMove: (_, gestureState) => {
-          if (trackWidth <= 0) return;
-          const currentPercent = (maxPrice - absoluteMin) / (absoluteMax - absoluteMin);
-          const currentPx = currentPercent * trackWidth;
-          const targetPx = Math.max(0, Math.min(currentPx + gestureState.dx, trackWidth));
-          const newRatio = targetPx / trackWidth;
-          const newVal = Math.round(absoluteMin + newRatio * (absoluteMax - absoluteMin));
-          updateRange(minPrice, Math.max(newVal, minPrice));
-        },
-      }),
-    [absoluteMin, absoluteMax, minPrice, maxPrice, trackWidth, updateRange]
-  );
+  // Stable refs สำหรับค่าที่ handlers ต้องใช้ (เพื่อให้ PanResponder ไม่ต้อง recreate ทุก render)
+  const trackWidthRef = useRef(trackWidth);
+  const absoluteMinRef = useRef(absoluteMin);
+  const absoluteMaxRef = useRef(absoluteMax);
+  const minPriceRef = useRef(minPrice);
+  const maxPriceRef = useRef(maxPrice);
+  const updateRangeRef = useRef(updateRange);
+
+  // อัปเดต refs ทุกครั้งที่ค่าเปลี่ยน — ทำใน render body แต่เขียนลง .current ไม่ใช่ อ่าน .current
+  trackWidthRef.current = trackWidth;
+  absoluteMinRef.current = absoluteMin;
+  absoluteMaxRef.current = absoluteMax;
+  minPriceRef.current = minPrice;
+  maxPriceRef.current = maxPrice;
+  updateRangeRef.current = updateRange;
+
+  // Mobile PanResponder สำหรับ Min Handle — สร้างครั้งเดียว อ่านค่าผ่าน refs เสมอ
+  const minPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        const tw = trackWidthRef.current;
+        if (tw > 0) {
+          minStartOffsetRef.current =
+            ((minPriceRef.current - absoluteMinRef.current) / (absoluteMaxRef.current - absoluteMinRef.current)) * tw;
+        }
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const tw = trackWidthRef.current;
+        if (tw <= 0) return;
+        const targetPx = Math.max(0, Math.min(minStartOffsetRef.current + gestureState.dx, tw));
+        const newRatio = targetPx / tw;
+        const newVal = Math.round(absoluteMinRef.current + newRatio * (absoluteMaxRef.current - absoluteMinRef.current));
+        updateRangeRef.current(Math.min(newVal, maxPriceRef.current), maxPriceRef.current);
+      },
+    })
+  ).current;
+
+  // Mobile PanResponder สำหรับ Max Handle — สร้างครั้งเดียว อ่านค่าผ่าน refs เสมอ
+  const maxPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        const tw = trackWidthRef.current;
+        if (tw > 0) {
+          maxStartOffsetRef.current =
+            ((maxPriceRef.current - absoluteMinRef.current) / (absoluteMaxRef.current - absoluteMinRef.current)) * tw;
+        }
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const tw = trackWidthRef.current;
+        if (tw <= 0) return;
+        const targetPx = Math.max(0, Math.min(maxStartOffsetRef.current + gestureState.dx, tw));
+        const newRatio = targetPx / tw;
+        const newVal = Math.round(absoluteMinRef.current + newRatio * (absoluteMaxRef.current - absoluteMinRef.current));
+        updateRangeRef.current(minPriceRef.current, Math.max(newVal, minPriceRef.current));
+      },
+    })
+  ).current;
+
 
   // การจัดการเมื่อผู้ใช้กด Submit ในช่อง TextInput
   const handleMinSubmit = () => {

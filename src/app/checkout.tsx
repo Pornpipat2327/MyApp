@@ -10,7 +10,6 @@ import {
   ScrollView,
   View,
   Pressable,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,7 +25,7 @@ import { ShippingAddressValues } from '@/components/checkout/types';
 import { PaymentMethodSelector } from '@/components/checkout/payment-method-selector';
 import { OrderSummaryCard } from '@/components/checkout/order-summary-card';
 import { OrderSuccessModal } from '@/components/checkout/order-success-modal';
-import { getStorageJSON, setStorageJSON } from '@/utils/storage';
+import { getStorageJSON, setStorageJSON, emitStorageChange } from '@/utils/storage';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -43,12 +42,10 @@ export default function CheckoutScreen() {
   // กำหนดค่าเริ่มต้นของผู้รับจาก User ที่เข้าสู่ระบบ
   const [shippingValues, setShippingValues] = useState<ShippingAddressValues>(() => {
     let defaultRecipient = '';
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        const user = getStorageJSON<{ username?: string }>('user', {});
-        if (user?.username) defaultRecipient = user.username;
-      } catch {}
-    }
+    try {
+      const user = getStorageJSON<{ username?: string }>('user', {});
+      if (user?.username) defaultRecipient = user.username;
+    } catch {}
     return {
       recipientName: defaultRecipient,
       phone: '',
@@ -103,13 +100,11 @@ export default function CheckoutScreen() {
     setTimeout(() => {
       let currentUsername = 'Guest';
       let currentUserRole = 'user';
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        try {
-          const user = getStorageJSON<{ username?: string; role?: string }>('user', {});
-          if (user?.username) currentUsername = user.username;
-          if (user?.role) currentUserRole = user.role;
-        } catch {}
-      }
+      try {
+        const user = getStorageJSON<{ username?: string; role?: string }>('user', {});
+        if (user?.username) currentUsername = user.username;
+        if (user?.role) currentUserRole = user.role;
+      } catch {}
 
       const newOrder: Order = {
         id: `EK-${Math.floor(10000 + Math.random() * 90000)}`,
@@ -136,16 +131,14 @@ export default function CheckoutScreen() {
         trackingNumber: `TH${Math.floor(100000000 + Math.random() * 900000000)}TH`,
       };
 
-      // บันทึกลงใน LocalStorage
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        try {
-          const existingOrders = getStorageJSON<Order[]>('extreme_keys_orders', []);
-          const updated = [newOrder, ...(Array.isArray(existingOrders) ? existingOrders : [])];
-          setStorageJSON('extreme_keys_orders', updated);
-          window.dispatchEvent(new Event('orders-change'));
-        } catch (e) {
-          console.error('Failed to save order to localStorage', e);
-        }
+      // บันทึกลงใน Universal Storage (ทำงานทั้งบน Mobile และ Web)
+      try {
+        const existingOrders = getStorageJSON<Order[]>('extreme_keys_orders', []);
+        const updated = [newOrder, ...(Array.isArray(existingOrders) ? existingOrders : [])];
+        setStorageJSON('extreme_keys_orders', updated);
+        emitStorageChange('orders-change');
+      } catch (e) {
+        console.error('Failed to save order to storage', e);
       }
 
       clearCart();

@@ -7,7 +7,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +22,7 @@ import { getProductsApiUrl } from '@/constants/api';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { ProductCategory } from '@/types/product';
 import { DEFAULT_CATEGORIES } from '@/constants/categories';
+import { getStorageItem } from '@/utils/storage';
 
 export default function CategoriesScreen() {
   const router = useRouter();
@@ -30,11 +30,9 @@ export default function CategoriesScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const user = localStorage.getItem('user');
-      if (!user) {
-        router.replace('/login' as any);
-      }
+    const user = getStorageItem('user');
+    if (!user) {
+      router.replace('/login' as any);
     }
 
     let isMounted = true;

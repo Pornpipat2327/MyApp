@@ -2,10 +2,11 @@
  * @file top-header.tsx
  * @description แถบส่วนหัวด้านบนของระบบ (Global Header Bar)
  * ประกอบด้วยโลโก้ร้านค้า, ช่องค้นหาพร้อมระบบ Auto-complete Popover, ปุ่มสลับธีม, ปุ่มตะกร้าสินค้า และปุ่มผู้ใช้
+ * ออกแบบ Responsive เต็มรูปแบบ: บนจอมือถือ (<680px) แยกเป็น 2 แถวเพื่อไม่ให้ไอคอนและช่องค้นหาทับกัน
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, View, TextInput, Pressable, Platform } from 'react-native';
+import { StyleSheet, View, TextInput, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
@@ -17,6 +18,7 @@ import { useSearchHistory } from '@/hooks/use-search-history';
 import { getProductsApiUrl } from '@/constants/api';
 import { QuickProduct } from '@/types/product';
 import { SearchDropdown } from '@/components/header/search-dropdown';
+import { isCurrentUserAdmin, getStorageItem, subscribeStorageChange } from '@/utils/storage';
 
 export interface TopHeaderProps {
   searchQuery?: string;
@@ -28,8 +30,15 @@ export function TopHeader({ searchQuery, onSearchChange, onSearchSubmit }: TopHe
   const theme = useTheme();
   const router = useRouter();
   const { totalItems } = useCart();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 680;
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return !!getStorageItem('user');
+  });
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    return isCurrentUserAdmin();
+  });
   const [internalQuery, setInternalQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [allProducts, setAllProducts] = useState<QuickProduct[]>([]);
@@ -43,25 +52,18 @@ export function TopHeader({ searchQuery, onSearchChange, onSearchSubmit }: TopHe
   const isControlled = onSearchChange !== undefined;
   const activeQuery = isControlled ? (searchQuery ?? '') : internalQuery;
 
-  // ตรวจสอบสถานะการเข้าสู่ระบบ
+  // ตรวจสอบสถานะการเข้าสู่ระบบและสิทธิ์ Admin (ทำงานทั้งบน Mobile และ Web)
   useEffect(() => {
     const checkAuth = () => {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const user = localStorage.getItem('user');
-        setIsLoggedIn(!!user);
-      }
+      setIsLoggedIn(!!getStorageItem('user'));
+      setIsAdmin(isCurrentUserAdmin());
     };
 
     checkAuth();
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.addEventListener('storage', checkAuth);
-      window.addEventListener('auth-change', checkAuth);
-      return () => {
-        window.removeEventListener('storage', checkAuth);
-        window.removeEventListener('auth-change', checkAuth);
-      };
-    }
+    // ดักฟังเหตุการณ์ auth-change ผ่าน Universal Event Emitter
+    const unsub = subscribeStorageChange('auth-change', checkAuth);
+    return unsub;
   }, []);
 
   // โหลดรายการสินค้าสำหรับระบบ Auto-complete เมื่อผู้ใช้กดที่ช่องค้นหา
@@ -144,117 +146,165 @@ export function TopHeader({ searchQuery, onSearchChange, onSearchSubmit }: TopHe
       .slice(0, 5);
   }, [activeQuery, allProducts]);
 
-  return (
-    <ThemedView type="background" style={styles.headerWrapper}>
-      <View style={styles.innerContainer}>
-        {/* ส่วนโลโก้ร้านค้า */}
-        <Pressable onPress={() => router.push('/' as any)} style={styles.logoButton}>
-          <ThemedText style={styles.logoIcon}>⌨️</ThemedText>
-          <ThemedText type="smallBold" style={styles.logoTitle}>
-            Extreme<ThemedText type="smallBold" style={{ color: '#6cc349' }}>Key</ThemedText>
-          </ThemedText>
-        </Pressable>
-
-        {/* ช่องค้นหาพร้อม Dropdown */}
-        <View style={styles.searchSection}>
-          <View
-            style={[
-              styles.searchBar,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: isFocused ? '#6cc349' : theme.border,
-              },
-            ]}
-          >
+  // คอมโพเนนต์ช่องค้นหา
+  const renderSearchBar = () => (
+    <View style={[styles.searchSection, isMobile && styles.searchSectionMobile]}>
+      <View
+        style={[
+          styles.searchBar,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: isFocused ? '#6cc349' : theme.border,
+          },
+        ]}
+      >
+        <SymbolView
+          tintColor={theme.textSecondary}
+          name={{ ios: 'magnifyingglass', android: 'search', web: 'search' } as any}
+          size={18}
+        />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="ค้นหาคีย์บอร์ด, หมวดหมู่, สเปก..."
+          placeholderTextColor={theme.textSecondary}
+          value={activeQuery}
+          onChangeText={handleTextChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onSubmitEditing={() => handleQuerySubmit()}
+          returnKeyType="search"
+        />
+        {activeQuery.length > 0 && (
+          <Pressable onPress={() => handleTextChange('')} hitSlop={8}>
             <SymbolView
               tintColor={theme.textSecondary}
-              name={{ ios: 'magnifyingglass', android: 'search', web: 'search' } as any}
-              size={18}
-            />
-            <TextInput
-              style={[styles.searchInput, { color: theme.text }]}
-              placeholder="ค้นหาคีย์บอร์ด, หมวดหมู่, สเปก..."
-              placeholderTextColor={theme.textSecondary}
-              value={activeQuery}
-              onChangeText={handleTextChange}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onSubmitEditing={() => handleQuerySubmit()}
-              returnKeyType="search"
-            />
-            {activeQuery.length > 0 && (
-              <Pressable onPress={() => handleTextChange('')} hitSlop={8}>
-                <SymbolView
-                  tintColor={theme.textSecondary}
-                  name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' } as any}
-                  size={16}
-                />
-              </Pressable>
-            )}
-          </View>
-
-          {/* ป๊อปอัปผลการค้นหา */}
-          {isFocused && (
-            <SearchDropdown
-              activeQuery={activeQuery}
-              recentSearches={recentSearches}
-              popularTags={popularTags}
-              matchingProducts={matchingProducts}
-              onSelectQuery={handleQuerySubmit}
-              onSelectProduct={handleSelectProduct}
-              onRemoveSearchItem={removeSearch}
-              onClearSearches={clearSearches}
-              onClose={() => setIsFocused(false)}
-            />
-          )}
-        </View>
-
-        {/* ไอคอนด้านขวา: ตะกร้าสินค้า และ ผู้ใช้ */}
-        <View style={styles.actionsRight}>
-          {/* ปุ่มตะกร้าสินค้า */}
-          <Pressable
-            onPress={() => router.push('/cart' as any)}
-            style={({ pressed }) => [
-              styles.actionIconButton,
-              { backgroundColor: theme.backgroundElement },
-              pressed && styles.pressed,
-            ]}
-          >
-            <SymbolView
-              tintColor={theme.text}
-              name={{ ios: 'cart', android: 'shopping_cart', web: 'shopping_cart' } as any}
-              size={20}
-            />
-            {totalItems > 0 && (
-              <View style={styles.badge}>
-                <ThemedText type="smallBold" style={styles.badgeText}>
-                  {totalItems > 99 ? '99+' : totalItems}
-                </ThemedText>
-              </View>
-            )}
-          </Pressable>
-
-          {/* ปุ่มโปรไฟล์/ล็อกอิน */}
-          <Pressable
-            onPress={() => router.push('/login' as any)}
-            style={({ pressed }) => [
-              styles.actionIconButton,
-              { backgroundColor: theme.backgroundElement },
-              pressed && styles.pressed,
-            ]}
-          >
-            <SymbolView
-              tintColor={isLoggedIn ? '#6cc349' : theme.text}
-              name={{
-                ios: isLoggedIn ? 'person.fill.checkmark' : 'person.circle',
-                android: 'account_circle',
-                web: 'account_circle',
-              } as any}
-              size={20}
+              name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' } as any}
+              size={16}
             />
           </Pressable>
-        </View>
+        )}
       </View>
+
+      {/* ป๊อปอัปผลการค้นหา */}
+      {isFocused && (
+        <SearchDropdown
+          activeQuery={activeQuery}
+          recentSearches={recentSearches}
+          popularTags={popularTags}
+          matchingProducts={matchingProducts}
+          onSelectQuery={handleQuerySubmit}
+          onSelectProduct={handleSelectProduct}
+          onRemoveSearchItem={removeSearch}
+          onClearSearches={clearSearches}
+          onClose={() => setIsFocused(false)}
+        />
+      )}
+    </View>
+  );
+
+  // คอมโพเนนต์ปุ่มการทำงานด้านขวา (Orders, Cart, User)
+  const renderActionButtons = () => (
+    <View style={styles.actionsRight}>
+      {/* ปุ่ม Orders (แสดงสำหรับทุกคน: Admin จัดการออเดอร์, User ดูประวัติการสั่งซื้อ) */}
+      <Pressable
+        onPress={() => router.push('/orders' as any)}
+        accessibilityLabel={isAdmin ? 'Manage Orders' : 'My Orders'}
+        {...(Platform.OS === 'web' ? ({ title: isAdmin ? 'Manage Orders' : 'My Orders' } as any) : {})}
+        style={({ pressed }) => [
+          styles.actionIconButton,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: isAdmin ? '#6cc349' : '#3d3938',
+          },
+          pressed && styles.pressed,
+        ]}
+      >
+        <SymbolView
+          tintColor={isAdmin ? '#6cc349' : theme.text}
+          name={{ ios: 'doc.plaintext', android: 'receipt_long', web: 'receipt_long' } as any}
+          size={18}
+        />
+      </Pressable>
+
+      {/* ปุ่มตะกร้าสินค้า */}
+      <Pressable
+        onPress={() => router.push('/cart' as any)}
+        accessibilityLabel="Cart"
+        style={({ pressed }) => [
+          styles.actionIconButton,
+          { backgroundColor: theme.backgroundElement },
+          pressed && styles.pressed,
+        ]}
+      >
+        <SymbolView
+          tintColor={theme.text}
+          name={{ ios: 'cart', android: 'shopping_cart', web: 'shopping_cart' } as any}
+          size={18}
+        />
+        {totalItems > 0 && (
+          <View style={styles.badge}>
+            <ThemedText type="smallBold" style={styles.badgeText}>
+              {totalItems > 99 ? '99+' : totalItems}
+            </ThemedText>
+          </View>
+        )}
+      </Pressable>
+
+      {/* ปุ่มโปรไฟล์/ล็อกอิน */}
+      <Pressable
+        onPress={() => router.push('/login' as any)}
+        accessibilityLabel="Account"
+        style={({ pressed }) => [
+          styles.actionIconButton,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: isLoggedIn ? '#6cc349' : '#3d3938',
+          },
+          pressed && styles.pressed,
+        ]}
+      >
+        <SymbolView
+          tintColor={isLoggedIn ? '#6cc349' : theme.text}
+          name={{
+            ios: isLoggedIn ? 'person.fill.checkmark' : 'person.circle',
+            android: 'account_circle',
+            web: 'account_circle',
+          } as any}
+          size={18}
+        />
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <ThemedView type="background" style={styles.headerWrapper}>
+      {isMobile ? (
+        /* โหมดมือถือ: จัด 2 แถว (แถว 1: โลโก้ + ปุ่มคำสั่ง, แถว 2: ช่องค้นหาเต็มความกว้าง) */
+        <View style={styles.innerContainerMobile}>
+          <View style={styles.topRowMobile}>
+            <Pressable onPress={() => router.push('/' as any)} style={styles.logoButton}>
+              <ThemedText style={styles.logoIcon}>⌨️</ThemedText>
+              <ThemedText type="smallBold" style={styles.logoTitle}>
+                Extreme<ThemedText type="smallBold" style={{ color: '#6cc349' }}>Key</ThemedText>
+              </ThemedText>
+            </Pressable>
+            {renderActionButtons()}
+          </View>
+          {renderSearchBar()}
+        </View>
+      ) : (
+        /* โหมด Desktop/Tablet: จัดแถวเดียว (โลโก้ + ช่องค้นหาตรงกลาง + ปุ่มคำสั่งขวา) */
+        <View style={styles.innerContainer}>
+          <Pressable onPress={() => router.push('/' as any)} style={styles.logoButton}>
+            <ThemedText style={styles.logoIcon}>⌨️</ThemedText>
+            <ThemedText type="smallBold" style={styles.logoTitle}>
+              Extreme<ThemedText type="smallBold" style={{ color: '#6cc349' }}>Key</ThemedText>
+            </ThemedText>
+          </Pressable>
+          {renderSearchBar()}
+          {renderActionButtons()}
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -266,6 +316,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#3d3938',
     zIndex: 999,
   },
+  // สไตล์สำหรับหน้าจอคอมฯ / แท็บเล็ต
   innerContainer: {
     maxWidth: 1200,
     width: '100%',
@@ -276,22 +327,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
   },
+  // สไตล์สำหรับหน้าจอมือถือ
+  innerContainerMobile: {
+    width: '100%',
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    gap: Spacing.two,
+  },
+  topRowMobile: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   logoButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
   logoIcon: {
-    fontSize: 24,
+    fontSize: 22,
   },
   logoTitle: {
     fontSize: 18,
     fontWeight: '800',
+    letterSpacing: 0.5,
   },
   searchSection: {
     flex: 1,
     position: 'relative',
     zIndex: 1000,
+    minWidth: 0,
+  },
+  searchSectionMobile: {
+    width: '100%',
+    flex: undefined,
   },
   searchBar: {
     flexDirection: 'row',
@@ -306,18 +376,24 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    minWidth: 0,
     fontSize: 14,
     color: '#ede5e2',
     padding: 0,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none' as any,
+      },
+    }),
   },
   actionsRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: 8,
   },
   actionIconButton: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
     borderColor: '#3d3938',
@@ -327,19 +403,19 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -3,
+    right: -3,
     backgroundColor: '#6cc349',
     borderRadius: 0, // 0px voxel doctrine
-    minWidth: 18,
-    height: 18,
+    minWidth: 17,
+    height: 17,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   badgeText: {
     color: '#ffffff',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   pressed: {

@@ -32,11 +32,13 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       style={({ pressed }) => [styles.cardPressable, { opacity: pressed ? 0.88 : 1 }]}
     >
       <ThemedView type="backgroundElement" style={styles.card}>
-        {/* รูปภาพสินค้า */}
+        {/* รูปภาพสินค้า - ใช้ contain พร้อม padding เพื่อไม่ให้คีย์บอร์ดถูกตัดขอบข้าง */}
         {imgSrc ? (
-          <Image source={imgSrc} style={styles.productImage} resizeMode="cover" />
+          <View style={styles.imageWrapper}>
+            <Image source={imgSrc} style={styles.productImage} resizeMode="contain" />
+          </View>
         ) : (
-          <View style={[styles.productImage, styles.placeholderBox]}>
+          <View style={[styles.imageWrapper, styles.placeholderBox]}>
             <SymbolView
               name={{ ios: 'keyboard', android: 'keyboard', web: 'keyboard' }}
               tintColor={theme.textSecondary}
@@ -77,7 +79,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         width: `calc(33.33% - ${(Spacing.three * 2) / 3}px)` as any,
-        minWidth: 220,
+        minWidth: 260,
       },
     }),
   },
@@ -89,10 +91,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: Spacing.two,
   },
+  imageWrapper: {
+    width: '100%',
+    height: 180,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.two,
+  },
   productImage: {
     width: '100%',
-    height: 190,
-    backgroundColor: '#1d1e1e',
+    height: '100%',
   },
   placeholderBox: {
     alignItems: 'center',
@@ -122,10 +131,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   productName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    lineHeight: 22,
-    minHeight: 44,
+    lineHeight: 20,
+    minHeight: 40,
   },
   priceRow: {
     flexDirection: 'row',

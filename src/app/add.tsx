@@ -23,7 +23,7 @@ import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { getProductsApiUrl } from '@/constants/api';
 import { ProductFormData } from '@/types/product';
 import { ProductForm } from '@/components/product-form/product-form';
-import { isCurrentUserAdmin } from '@/utils/storage';
+import { getStorageItem, isCurrentUserAdmin } from '@/utils/storage';
 
 export interface AddProductScreenProps {
   product?: ProductFormData | null;
@@ -37,20 +37,18 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
 
   // ตรวจสอบสิทธิ์ Admin เมื่อเข้าสู่หน้านี้
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const user = localStorage.getItem('user');
-      if (!user) {
-        router.replace('/login' as any);
-        return;
+    const user = getStorageItem('user');
+    if (!user) {
+      router.replace('/login' as any);
+      return;
+    }
+    if (!isCurrentUserAdmin()) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert('สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Administrator) เท่านั้น');
+      } else {
+        Alert.alert('การเข้าถึงถูกจำกัด', 'สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น');
       }
-      if (!isCurrentUserAdmin()) {
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.alert('สงวนสิทธิ์เฉพาะผู้ดูแลระบบ (Administrator) เท่านั้น');
-        } else {
-          Alert.alert('การเข้าถึงถูกจำกัด', 'สงวนสิทธิ์เฉพาะผู้ดูแลระบบเท่านั้น');
-        }
-        router.replace('/' as any);
-      }
+      router.replace('/' as any);
     }
   }, [router]);
 

@@ -5,13 +5,14 @@
 
 import { DarkTheme, DefaultTheme, ThemeProvider, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
 import { CartProvider } from '@/context/cart-context';
 import { useAutoLogout } from '@/hooks/use-auto-logout';
+import { initStorage, getStorageItem, subscribeStorageChange } from '@/utils/storage';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,22 +20,35 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const pathname = usePathname();
+  const [storageReady, setStorageReady] = useState(false);
 
-  // ใช้งาน Standalone Auto Logout เมื่อปิดแท็บแล้วเปิดใหม่
+  // ── โหลด Storage เข้า memory ก่อนแสดง UI ─────────────────────────────────
+  useEffect(() => {
+    initStorage().finally(() => setStorageReady(true));
+  }, []);
+
+  // ใช้งาน Auto Logout
   useAutoLogout();
 
-  // ตรวจสอบสถานะการเข้าสู่ระบบและนำทางไปหน้า Login หากยังไม่ได้ล็อกอิน
+  // ── ตรวจสอบ Auth และ Redirect ────────────────────────────────────────────
   useEffect(() => {
-    const checkAuthAndRedirect = () => {
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        const user = localStorage.getItem('user');
-        if (!user && pathname !== '/login') {
-          router.replace('/login' as any);
-        }
+    if (!storageReady) return;
+
+    const checkAndRedirect = () => {
+      const user = getStorageItem('user');
+      if (!user && pathname !== '/login') {
+        router.replace('/login' as any);
       }
     };
-    checkAuthAndRedirect();
-  }, [pathname, router]);
+
+    checkAndRedirect();
+
+    // ดักฟัง auth-change บน Mobile และ Web ผ่าน Universal Event Emitter
+    const unsub = subscribeStorageChange('auth-change', checkAndRedirect);
+    return unsub;
+  }, [storageReady, pathname, router]);
+
+  if (!storageReady) return null;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

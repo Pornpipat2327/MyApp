@@ -28,7 +28,7 @@ import { Product } from '@/types/product';
 import { ProductImageViewer } from '@/components/detail/product-image-viewer';
 import { ProductInfoSection } from '@/components/detail/product-info-section';
 import { ProductActionBar } from '@/components/detail/product-action-bar';
-import { isCurrentUserAdmin } from '@/utils/storage';
+import { isCurrentUserAdmin, getStorageItem } from '@/utils/storage';
 
 export default function ProductDetailScreen() {
   const theme = useTheme();
@@ -47,14 +47,12 @@ export default function ProductDetailScreen() {
   useFocusEffect(
     useCallback(() => {
       // 1. ตรวจสอบสถานะการเข้าสู่ระบบ
-      if (Platform.OS === 'web') {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          router.replace('/login' as any);
-          return;
-        }
-        setIsAdmin(isCurrentUserAdmin());
+      const userStr = getStorageItem('user');
+      if (!userStr) {
+        router.replace('/login' as any);
+        return;
       }
+      setIsAdmin(isCurrentUserAdmin());
 
       // 2. ตรวจสอบ ID สินค้า
       if (!params.id) {

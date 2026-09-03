@@ -27,6 +27,7 @@ import { Product } from '@/types/product';
 import { getProductsApiUrl } from '@/constants/api';
 import { ProductCard } from '@/components/product/product-card';
 import { getImageSource } from '@/utils/image';
+import { getStorageItem } from '@/utils/storage';
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name';
 
@@ -106,12 +107,10 @@ export default function ProductScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'web') {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          router.replace('/login' as any);
-          return;
-        }
+      const userStr = getStorageItem('user');
+      if (!userStr) {
+        router.replace('/login' as any);
+        return;
       }
       if (params.search !== undefined) {
         setSearchQuery(params.search);
@@ -504,14 +503,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#262423',
     borderWidth: 1,
     borderColor: '#3d3938',
-    borderRadius: 8,
-    padding: Spacing.four,
-    gap: Spacing.three,
+    borderRadius: 0, // 0px voxel doctrine
+    padding: Spacing.three,
+    gap: Spacing.two,
   },
   filterChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    rowGap: Spacing.two,
+    flexWrap: 'wrap',
     paddingVertical: 2,
   },
   filterChip: {

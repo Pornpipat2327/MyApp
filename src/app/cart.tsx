@@ -104,17 +104,31 @@ export default function CartScreen() {
               >
                 คุณยังไม่ได้เพิ่มคีย์บอร์ดลงในตะกร้าสินค้า เริ่มต้นเลือกดูคีย์บอร์ดที่ถูกใจได้เลย!
               </ThemedText>
-              <Pressable
-                onPress={() => router.push('/product')}
-                style={({ pressed }) => [
-                  styles.browseBtn,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
-                  Explore Store
-                </ThemedText>
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Pressable
+                  onPress={() => router.push('/product')}
+                  style={({ pressed }) => [
+                    styles.browseBtn,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <ThemedText type="smallBold" style={{ color: '#ffffff' }}>
+                    Explore Store
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/orders' as any)}
+                  style={({ pressed }) => [
+                    styles.browseBtn,
+                    { backgroundColor: '#262423', borderWidth: 1, borderColor: '#3d3938' },
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <ThemedText type="smallBold" style={{ color: '#6cc349' }}>
+                    📦 View Orders
+                  </ThemedText>
+                </Pressable>
+              </View>
             </ThemedView>
           ) : (
             <View style={styles.mainWrapper}>
