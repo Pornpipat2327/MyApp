@@ -243,13 +243,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   itemsColumn: {
-    flex: 1.4,
-    minWidth: 320,
+    flex: 1,
+    minWidth: 280,
+    width: '100%',
     gap: Spacing.three,
   },
   summaryColumn: {
     flex: 1,
-    minWidth: 280,
+    minWidth: 260,
+    width: '100%',
   },
   sectionHeadingRow: {
     flexDirection: 'row',

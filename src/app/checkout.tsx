@@ -10,6 +10,8 @@ import {
   ScrollView,
   View,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -171,54 +173,61 @@ export default function CheckoutScreen() {
           <View style={{ width: 60 }} />
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          {completedOrder ? (
-            <OrderSuccessModal order={completedOrder} />
-          ) : (
-            <View style={styles.mainWrapper}>
-              {/* แบนเนอร์แสดงข้อความเตือน Error */}
-              {errorMessage && (
-                <View style={styles.errorBanner}>
-                  <ThemedText style={{ color: '#ff605e', fontSize: 13, fontWeight: '700' }}>
-                    ⚠️ {errorMessage}
-                  </ThemedText>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {completedOrder ? (
+              <OrderSuccessModal order={completedOrder} />
+            ) : (
+              <View style={styles.mainWrapper}>
+                {/* แบนเนอร์แสดงข้อความเตือน Error */}
+                {errorMessage && (
+                  <View style={styles.errorBanner}>
+                    <ThemedText style={{ color: '#ff605e', fontSize: 13, fontWeight: '700' }}>
+                      ⚠️ {errorMessage}
+                    </ThemedText>
+                  </View>
+                )}
+
+                {/* คอลัมน์ซ้าย: ฟอร์มที่อยู่ และ ช่องทางชำระเงิน */}
+                <View style={styles.formsColumn}>
+                  <ShippingForm
+                    values={shippingValues}
+                    onChange={handleShippingChange}
+                  />
+
+                  <PaymentMethodSelector
+                    selectedMethod={paymentMethod}
+                    onSelectMethod={setPaymentMethod}
+                    grandTotal={grandTotal}
+                  />
                 </View>
-              )}
 
-              {/* คอลัมน์ซ้าย: ฟอร์มที่อยู่ และ ช่องทางชำระเงิน */}
-              <View style={styles.formsColumn}>
-                <ShippingForm
-                  values={shippingValues}
-                  onChange={handleShippingChange}
-                />
-
-                <PaymentMethodSelector
-                  selectedMethod={paymentMethod}
-                  onSelectMethod={setPaymentMethod}
-                  grandTotal={grandTotal}
-                />
+                {/* คอลัมน์ขวา: การ์ดสรุปยอดเงินและปุ่มสั่งซื้อ */}
+                <View style={styles.summaryColumn}>
+                  <OrderSummaryCard
+                    items={items}
+                    subtotal={subtotal}
+                    shippingFee={shippingFee}
+                    discount={discount}
+                    grandTotal={grandTotal}
+                    appliedCoupon={appliedCoupon}
+                    loading={loading}
+                    onPlaceOrder={handlePlaceOrder}
+                  />
+                </View>
               </View>
-
-              {/* คอลัมน์ขวา: การ์ดสรุปยอดเงินและปุ่มสั่งซื้อ */}
-              <View style={styles.summaryColumn}>
-                <OrderSummaryCard
-                  items={items}
-                  subtotal={subtotal}
-                  shippingFee={shippingFee}
-                  discount={discount}
-                  grandTotal={grandTotal}
-                  appliedCoupon={appliedCoupon}
-                  loading={loading}
-                  onPlaceOrder={handlePlaceOrder}
-                />
-              </View>
-            </View>
-          )}
-        </ScrollView>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -264,13 +273,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   formsColumn: {
-    flex: 1.4,
-    minWidth: 320,
+    flex: 1,
+    minWidth: 280,
+    width: '100%',
     gap: Spacing.four,
   },
   summaryColumn: {
     flex: 1,
-    minWidth: 280,
+    minWidth: 260,
+    width: '100%',
   },
   errorBanner: {
     width: '100%',

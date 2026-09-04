@@ -12,6 +12,7 @@ import {
   Pressable,
   Platform,
   Alert,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -144,20 +145,26 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           <View style={{ width: 60 }} />
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ProductForm
-            key={product?.id ? `edit-${product.id}` : 'add-new'}
-            initialData={product}
-            isEditMode={!!product}
-            onSubmit={handleSaveProduct}
-            onCancel={handleCancelAction}
-            loading={submitting}
-          />
-        </ScrollView>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <ProductForm
+              key={product?.id ? `edit-${product.id}` : 'add-new'}
+              initialData={product}
+              isEditMode={!!product}
+              onSubmit={handleSaveProduct}
+              onCancel={handleCancelAction}
+              loading={submitting}
+            />
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );

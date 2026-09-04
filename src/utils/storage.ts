@@ -177,7 +177,7 @@ export async function initStorage(): Promise<void> {
     if (Platform.OS === 'web') {
       // บน Web: localStorage พร้อมใช้ทันที ไม่ต้อง async init
       // โหลดเข้า memory cache เผื่อ key บางตัวยังไม่ได้ load
-      const keysToPreload = ['user', 'token', 'extreme_keys_cart', 'extreme_keys_coupon', 'extreme_keys_recent_searches'];
+      const keysToPreload = ['user', 'token', 'extreme_keys_cart', 'extreme_keys_coupon', 'extreme_keys_recent_searches', 'extreme_keys_orders'];
       for (const key of keysToPreload) {
         try {
           const value = localStorage.getItem(key);
@@ -191,7 +191,7 @@ export async function initStorage(): Promise<void> {
 
     // Mobile: อ่านข้อมูลจาก AsyncStorage เข้า memory
     try {
-      const keysToPreload = ['user', 'token', 'extreme_keys_cart', 'extreme_keys_coupon', 'extreme_keys_recent_searches'];
+      const keysToPreload = ['user', 'token', 'extreme_keys_cart', 'extreme_keys_coupon', 'extreme_keys_recent_searches', 'extreme_keys_orders'];
       const pairs = await AsyncStorage.multiGet(keysToPreload);
       for (const [key, value] of pairs) {
         if (value !== null) {

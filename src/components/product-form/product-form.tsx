@@ -496,8 +496,10 @@ const styles = StyleSheet.create({
     height: 48,
   },
   textArea: {
+    height: 100,
     minHeight: 80,
     textAlignVertical: 'top',
+    paddingTop: Platform.OS === 'ios' ? 10 : Spacing.two,
   },
   chipsRow: {
     flexDirection: 'row',
