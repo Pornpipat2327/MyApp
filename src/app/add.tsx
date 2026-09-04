@@ -131,18 +131,25 @@ export default function AddScreen({ product = null, onSuccess, onCancel }: AddPr
           <Pressable
             onPress={handleCancelAction}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+            hitSlop={8}
           >
             <SymbolView
               tintColor="#6cc349"
               name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' } as any}
-              size={20}
+              size={18}
             />
-            <ThemedText type="smallBold">ย้อนกลับ</ThemedText>
+            <ThemedText type="smallBold" style={styles.backBtnText}>
+              ย้อนกลับ
+            </ThemedText>
           </Pressable>
-          <ThemedText type="smallBold" style={styles.headerTitle}>
-            {product ? 'แก้ไขสินค้า (Edit Product)' : 'เพิ่มสินค้าใหม่ (Add New Product)'}
-          </ThemedText>
-          <View style={{ width: 60 }} />
+
+          <View style={styles.headerTitleContainer}>
+            <ThemedText type="smallBold" numberOfLines={1} style={styles.headerTitle}>
+              {product ? 'แก้ไขสินค้า (Edit Product)' : 'เพิ่มสินค้าใหม่ (Add Product)'}
+            </ThemedText>
+          </View>
+
+          <View style={styles.headerSpacer} />
         </View>
 
         <KeyboardAvoidingView
@@ -181,18 +188,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+    minHeight: 48,
     borderBottomWidth: 2,
     borderBottomColor: '#3d3938',
+    backgroundColor: '#1d1e1e',
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    width: 75,
+  },
+  backBtnText: {
+    color: '#6cc349',
+    fontSize: 13,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.one,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: '#ffffff',
+  },
+  headerSpacer: {
+    width: 75,
   },
   scrollView: {
     flex: 1,
@@ -201,7 +227,8 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     width: '100%',
     alignSelf: 'center',
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.six,
   },
   pressed: {

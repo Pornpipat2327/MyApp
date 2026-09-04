@@ -234,7 +234,7 @@ export function ProductForm({
 
           {/* ช่องใส่ Image URL ตรงๆ */}
           <View style={{ gap: 4 }}>
-            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
               หรือระบุ URL รูปภาพโดยตรง:
             </ThemedText>
             <TextInput
@@ -259,7 +259,7 @@ export function ProductForm({
 
         {/* ชื่อสินค้า */}
         <View style={styles.fieldGroup}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
             ชื่อสินค้า *
           </ThemedText>
           <TextInput
@@ -273,7 +273,7 @@ export function ProductForm({
 
         {/* หมวดหมู่สินค้า (Chips) */}
         <View style={styles.fieldGroup}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
             หมวดหมู่ (Category)
           </ThemedText>
           <View style={styles.chipsRow}>
@@ -293,10 +293,13 @@ export function ProductForm({
                 >
                   <ThemedText
                     type="small"
-                    style={{
-                      color: isSelected ? '#ffffff' : theme.text,
-                      fontWeight: isSelected ? '600' : '400',
-                    }}
+                    style={[
+                      styles.categoryChipText,
+                      {
+                        color: isSelected ? '#ffffff' : theme.text,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
+                    ]}
                   >
                     {cat}
                   </ThemedText>
@@ -309,7 +312,7 @@ export function ProductForm({
         {/* ราคา และ จำนวนสต็อก */}
         <View style={styles.rowTwoCols}>
           <View style={[styles.fieldGroup, { flex: 1 }]}>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.fieldLabel}>
               ราคา ($) *
             </ThemedText>
             <TextInput
@@ -323,8 +326,8 @@ export function ProductForm({
           </View>
 
           <View style={[styles.fieldGroup, { flex: 1 }]}>
-            <ThemedText type="small" themeColor="textSecondary">
-              จำนวนคงเหลือ (Stock) *
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.fieldLabel}>
+              จำนวนสต็อก (Stock) *
             </ThemedText>
             <TextInput
               style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
@@ -339,7 +342,7 @@ export function ProductForm({
 
         {/* คลังจัดเก็บ */}
         <View style={styles.fieldGroup}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
             ตำแหน่งจัดเก็บในคลัง (Location)
           </ThemedText>
           <TextInput
@@ -353,7 +356,7 @@ export function ProductForm({
 
         {/* คะแนนดาวเริ่มต้น */}
         <View style={styles.fieldGroup}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
             คะแนนรีวิวเริ่มต้น
           </ThemedText>
           <StarRating value={rating} onChange={setRating} />
@@ -361,7 +364,7 @@ export function ProductForm({
 
         {/* คำอธิบายสินค้า */}
         <View style={styles.fieldGroup}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
             รายละเอียดคำอธิบาย (Description)
           </ThemedText>
           <TextInput
@@ -395,12 +398,12 @@ export function ProductForm({
         <Pressable
           onPress={handleSubmit}
           disabled={loading}
-          style={[styles.submitBtn, { backgroundColor: '#6cc349' }, loading && { opacity: 0.7 }]}
+          style={[styles.submitBtn, loading && { opacity: 0.7 }]}
         >
           {loading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <ThemedText type="smallBold" style={{ color: '#ffffff', fontSize: 15 }}>
+            <ThemedText type="smallBold" style={{ color: '#ffffff', fontSize: 14 }}>
               {isEditMode ? 'บันทึกการแก้ไข' : 'เพิ่มสินค้าลงระบบ'}
             </ThemedText>
           )}
@@ -412,7 +415,7 @@ export function ProductForm({
 
 const styles = StyleSheet.create({
   formContainer: {
-    gap: Spacing.four,
+    gap: Spacing.three,
     maxWidth: 680,
     width: '100%',
     alignSelf: 'center',
@@ -429,16 +432,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   card: {
-    padding: Spacing.four,
+    padding: Spacing.three,
     borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
     borderColor: '#3d3938',
     gap: Spacing.three,
   },
   cardTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: '#d0c5c0',
     borderBottomWidth: 1,
@@ -449,7 +452,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   uploadBox: {
-    height: 140,
+    height: 120,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     borderColor: '#3d3938',
@@ -484,6 +487,13 @@ const styles = StyleSheet.create({
   fieldGroup: {
     gap: 4,
   },
+  fieldLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+    height: 18,
+    fontWeight: '500',
+    color: '#d0c5c0',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#898481',
@@ -493,10 +503,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: '#262423',
     color: '#ede5e2',
-    height: 48,
+    height: 44,
   },
   textArea: {
-    height: 100,
+    height: 90,
     minHeight: 80,
     textAlignVertical: 'top',
     paddingTop: Platform.OS === 'ios' ? 10 : Spacing.two,
@@ -507,25 +517,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    flexBasis: '31%',
+    flexGrow: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 0, // 0px voxel doctrine
     borderWidth: 1,
     borderColor: '#3d3938',
     backgroundColor: '#262423',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryChipText: {
+    fontSize: 13,
+    textAlign: 'center',
   },
   rowTwoCols: {
     flexDirection: 'row',
-    gap: Spacing.three,
+    gap: Spacing.two,
   },
   actionsRow: {
     flexDirection: 'row',
-    gap: Spacing.three,
+    gap: Spacing.two,
     marginTop: Spacing.two,
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 14,
+    height: 46,
     borderWidth: 2,
     borderColor: '#3d3938',
     borderRadius: 0, // 0px voxel doctrine
@@ -534,9 +552,9 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     flex: 2,
-    paddingVertical: 14,
+    height: 46,
     borderRadius: 0, // 0px voxel doctrine
-    backgroundColor: '#3c8527', // vanilla-green-5
+    backgroundColor: '#6cc349',
     borderWidth: 2,
     borderColor: '#262423',
     alignItems: 'center',
