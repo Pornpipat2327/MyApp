@@ -4,7 +4,7 @@
  * คำนวณและแสดงจำนวนสินค้าในแต่ละหมวดหมู่แบบ Dynamic จาก MySQL Database
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,58 +29,65 @@ export default function CategoriesScreen() {
   const [categoriesList, setCategoriesList] = useState<ProductCategory[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
 
+  // ตรวจสอบ Auth — ทำงานตลอดอายุ component
   useEffect(() => {
     const user = getStorageItem('user');
     if (!user) {
       router.replace('/login' as any);
     }
+  }, [router]);
 
-    let isMounted = true;
-    fetch(getProductsApiUrl())
-      .then((res) => res.json())
-      .then((json) => {
-        if (!isMounted) return;
-        const rawData = Array.isArray(json) ? json : json.data || [];
+  // ดึงจำนวนสินค้าต่อหมวดหมู่ใหม่ทุกครั้งที่ได้รับ Focus
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      setLoading(true);
+      fetch(getProductsApiUrl())
+        .then((res) => res.json())
+        .then((json) => {
+          if (!isMounted) return;
+          const rawData = Array.isArray(json) ? json : json.data || [];
 
-        const counts: Record<string, number> = {};
-        rawData.forEach((p: any) => {
-          const catName = p.category ?? p.Category ?? 'Other';
-          counts[catName] = (counts[catName] || 0) + 1;
+          const counts: Record<string, number> = {};
+          rawData.forEach((p: any) => {
+            const catName = p.category ?? p.Category ?? 'Other';
+            counts[catName] = (counts[catName] || 0) + 1;
+          });
+
+          const updatedCategories: ProductCategory[] = [];
+          let idCounter = 1;
+
+          for (const [name, count] of Object.entries(counts)) {
+            const existing = DEFAULT_CATEGORIES.find(
+              (c) => c.name.toLowerCase() === name.toLowerCase()
+            );
+            updatedCategories.push({
+              id: String(idCounter++),
+              name: existing ? existing.name : name,
+              icon: existing
+                ? existing.icon
+                : { ios: 'square.grid.2x2.fill', android: 'category', web: 'category' },
+              color: existing ? existing.color : '#888888',
+              count,
+            });
+          }
+
+          if (updatedCategories.length > 0) {
+            setCategoriesList(updatedCategories);
+          }
+        })
+        .catch((error) => {
+          console.error('Failed to fetch product categories', error);
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false);
         });
 
-        const updatedCategories: ProductCategory[] = [];
-        let idCounter = 1;
-
-        for (const [name, count] of Object.entries(counts)) {
-          const existing = DEFAULT_CATEGORIES.find(
-            (c) => c.name.toLowerCase() === name.toLowerCase()
-          );
-          updatedCategories.push({
-            id: String(idCounter++),
-            name: existing ? existing.name : name,
-            icon: existing
-              ? existing.icon
-              : { ios: 'square.grid.2x2.fill', android: 'category', web: 'category' },
-            color: existing ? existing.color : '#888888',
-            count,
-          });
-        }
-
-        if (updatedCategories.length > 0) {
-          setCategoriesList(updatedCategories);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to fetch product categories', error);
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const handleSelectCategory = (cat: ProductCategory) => {
     router.push({
