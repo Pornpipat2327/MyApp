@@ -4,7 +4,7 @@
  * โครงสร้างคมชัด 0px Voxel Doctrine, Dark Canvas (#313131), Vanilla Green (#6cc349), และ Surface Dark Soft (#3d3938)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -74,6 +74,7 @@ export default function HomeScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ดักฟังเหตุการณ์ auth-change — ทำงานตลอดอายุ component
   useEffect(() => {
     const checkUser = () => {
       const savedUser = getStorageItem('user');
@@ -94,25 +95,32 @@ export default function HomeScreen() {
 
     // ดักฟังเหตุการณ์ auth-change ผ่าน Universal Event Emitter (ทำงานทั้งบน Mobile และ Web)
     const unsubAuth = subscribeStorageChange('auth-change', checkUser);
-
-    let isMounted = true;
-    fetch(getProductsApiUrl())
-      .then((res) => res.json())
-      .then((json) => {
-        if (!isMounted) return;
-        const rawData = Array.isArray(json) ? json : json.data || [];
-        setProducts(rawData);
-      })
-      .catch((err) => console.error('Fetch products error:', err))
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-
     return () => {
-      isMounted = false;
       unsubAuth();
     };
   }, [router]);
+
+  // ดึงสินค้าใหม่ทุกครั้งที่หน้า Home ได้รับ Focus (เช่น หลังเพิ่ม/ลบสินค้า)
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      setLoading(true);
+      fetch(getProductsApiUrl())
+        .then((res) => res.json())
+        .then((json) => {
+          if (!isMounted) return;
+          const rawData = Array.isArray(json) ? json : json.data || [];
+          setProducts(rawData);
+        })
+        .catch((err) => console.error('Fetch products error:', err))
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
 
   const totalProducts = products.length;
   const recentProducts = [...products].reverse().slice(0, 5);
