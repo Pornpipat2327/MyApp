@@ -148,13 +148,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       quantity: number = 1
     ) => {
       setItems((prevItems) => {
+        const maxStock = product.stock !== undefined ? product.stock : 99;
+        if (maxStock <= 0) {
+          return prevItems;
+        }
+
+        const addQty = Math.max(1, quantity);
         const existingIndex = prevItems.findIndex((item) => String(item.id) === String(product.id));
         let updated: CartItem[];
 
         if (existingIndex > -1) {
           updated = [...prevItems];
-          const newQty = updated[existingIndex].quantity + quantity;
-          const maxStock = product.stock !== undefined ? product.stock : 99;
+          const newQty = updated[existingIndex].quantity + addQty;
           updated[existingIndex] = {
             ...updated[existingIndex],
             quantity: Math.min(newQty, maxStock),
@@ -166,7 +171,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: product.id,
               name: product.name,
               price: Number(product.price) || 0,
-              quantity: Math.min(quantity, product.stock !== undefined ? product.stock : 99),
+              quantity: Math.min(addQty, maxStock),
               image: product.image,
               category: product.category,
               stock: product.stock,

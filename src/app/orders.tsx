@@ -187,12 +187,7 @@ export default function OrdersScreen() {
       const activeUsername = (currentUser?.username || '').toLowerCase().trim();
       list = list.filter((o) => {
         const orderUser = (o.username || '').toLowerCase().trim();
-        return (
-          (activeUsername && orderUser === activeUsername) ||
-          orderUser === 'guest' ||
-          orderUser === 'user' ||
-          !orderUser
-        );
+        return activeUsername !== '' && orderUser === activeUsername;
       });
     }
 

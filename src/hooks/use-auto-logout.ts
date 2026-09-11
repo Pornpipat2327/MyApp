@@ -34,20 +34,33 @@ export function useAutoLogout() {
     const checkSessionOnStartup = () => {
       try {
         const user = getStorageItem('user');
-        const isSessionAlive = sessionStorage.getItem(SESSION_ALIVE_KEY);
+        const token = getStorageItem('token');
 
         if (user) {
-          if (!isSessionAlive) {
-            // ปิดแท็บไปแล้วเปิดใหม่ -> สั่ง Logout และล้างข้อมูล
-            removeStorageItem('user');
-            removeStorageItem('token');
-            sessionStorage.removeItem(SESSION_ALIVE_KEY);
-            emitStorageChange('auth-change');
+          // ตรวจสอบความถูกต้องและวันหมดอายุของ JWT Token
+          if (token && typeof token === 'string') {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              try {
+                const payload = JSON.parse(atob(parts[1]));
+                if (payload.exp && Date.now() >= payload.exp * 1000) {
+                  // Token หมดอายุจริง -> สั่ง Logout และล้างข้อมูล
+                  removeStorageItem('user');
+                  removeStorageItem('token');
+                  sessionStorage.removeItem(SESSION_ALIVE_KEY);
+                  emitStorageChange('auth-change');
 
-            if (pathnameRef.current !== '/login') {
-              router.replace('/login' as any);
+                  if (pathnameRef.current !== '/login') {
+                    router.replace('/login' as any);
+                  }
+                  return;
+                }
+              } catch {}
             }
           }
+
+          // ซิงค์สถานะ session ให้แท็บที่เปิดใหม่ ป้องกันการล้างข้อมูลข้ามแท็บ
+          sessionStorage.setItem(SESSION_ALIVE_KEY, 'true');
         }
       } catch (e) {
         console.error('Auto logout check error', e);
